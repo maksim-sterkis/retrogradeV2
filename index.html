@@ -232,6 +232,9 @@
 #cloud-board-level:focus { outline: 2px solid #00e8dc; outline-offset: 2px; }
 #cloud-board-level[hidden] { display: none; }
 
+.cloud-card label.cloud-remember { display: flex; align-items: center; gap: 12px; cursor: pointer; text-transform: none; }
+.cloud-card .cloud-remember input { display: inline-block; width: 20px; height: 20px; margin: 0; padding: 0; accent-color: #00d7cb; flex: 0 0 auto; }
+
     </style>
 </head>
 
@@ -11476,7 +11479,7 @@ function drawMenuUI() {
         drawUIButton('editor', 'EDITOR', 700, 352, 320, 52);
         drawUIButton('saveload', 'BACKUPS', 700, 418, 320, 52);
         drawUIButton('appearance', 'APPEARANCE', 700, 484, 320, 52);
-        drawUIButton('account', CloudAccount.session ? (CloudAccount.uploading ? 'ACCOUNT - SYNCING' : CloudAccount.hasUnsyncedChanges() ? 'ACCOUNT - UNSYNCED' : 'ACCOUNT - SYNCED') : 'LOG IN / GUEST', 260, 550, 320, 52);
+        drawUIButton('account', CloudAccount.session ? `ACCOUNT - ${CloudAccount.stateLabel()}` : 'LOG IN / GUEST', 260, 550, 320, 52);
         drawUIButton('leaderboards', 'LEADERBOARDS', 700, 550, 320, 52);
         drawMenuFooter(null, CloudAccount.session ? CloudAccount.session.username : 'GUEST / V2');
     } else if (menuScreen === 'practice') {
@@ -15305,27 +15308,32 @@ const CloudConfig = Object.freeze({
 });
 
 const CloudAccount = {
-    session: null, scope: 'guest', suppress: false, ready: false, uploading: null,
-    pingStatus: '', pingBusy: false, pendingGuest: null, timer: null, status: 'Guest saves stay on this device.', conflict: null, serial: 0,
+    session: null, rememberSession: false, rememberError: '', restoreEpoch: 0, sessionKey: 'retrograde_v2_remembered_session', scope: 'guest', suppress: false, ready: false, uploading: null,
+    pingStatus: '', pingBusy: false, firstDirtyAt: 0, retryAttempt: 0, networkOffline: false, jobTimer: null, pendingGuest: null, timer: null, status: 'Guest saves stay on this device.', conflict: null, serial: 0,
     meta: { revision: 0, dirty: false, published: [] },
     endpoint(action, query = {}) {
         const url = new URL(`${CloudConfig.url}/functions/v1/retrograde-api`);
-        url.searchParams.set('action', action);
+        url.searchParams.set('action', action); url.searchParams.set('api', '2');
         for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
         return url.toString();
     },
-    async request(action, { method = 'GET', body, query, auth = false, headers = {} } = {}) {
+    async request(action, { method = 'GET', body, query, auth = false, headers = {}, raw = false } = {}) {
+        const requestScope = this.scope, requestSerial = this.serial;
         if (auth) await this.ensureSession();
+        if (auth && (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error('Account changed.');
+        const sessionToken = auth ? this.session?.access_token : null;
         const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         const timeout = controller && setTimeout(() => controller.abort(), 45000);
         try {
             const response = await fetch(this.endpoint(action, query), {
                 method, headers: { apikey: CloudConfig.key,
-                    ...(auth ? { Authorization: `Bearer ${this.session.access_token}` } : {}), ...headers },
+                    ...(auth ? { Authorization: `Bearer ${sessionToken}` } : {}), ...headers },
                 ...(body === undefined ? {} : { body }), ...(controller ? { signal: controller.signal } : {})
             });
+            if (auth && (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error('Account changed.');
+            if (raw && response.ok) {const bytes=await this.readResponse(response);if(auth&&(requestScope!==this.scope||requestSerial!==this.serial))throw new Error('Account changed.');return bytes;}
             let result; try { result = await response.json(); } catch { result = {}; }
-            if (!response.ok) throw Object.assign(new Error(result.error || 'Cloud setup is not deployed yet, or the service is unavailable. Guest play is available.'), { status: response.status, revision: result.revision });
+            if (!response.ok) throw Object.assign(new Error(result.error || 'Cloud setup is not deployed yet, or the service is unavailable. Guest play is available.'), { status: response.status, revision: result.revision, retryAfter: Number(response.headers.get('Retry-After')) || result.retryAfter || 0 });
             return result;
         } catch (error) {
             if (error.status) throw error;
@@ -15339,47 +15347,150 @@ const CloudAccount = {
         try {
             const result = await this.request('health');
             if (result.ready !== true) throw new Error('Unexpected response');
-            this.pingStatus = `SERVER REACHABLE - ${Math.round(performance.now() - started)} MS`;
+            this.pingStatus = `API REACHABLE - ${Math.round(performance.now() - started)} MS`;
+            if (this.session) { const health=await this.request('diagnostics',{auth:true});
+                this.pingStatus=health.database && health.storage ? `API / DATABASE / STORAGE OK - ${Math.round(performance.now()-started)} MS` : 'API REACHABLE - SERVICE CHECK FAILED'; }
         } catch {
-            this.pingStatus = 'SERVER UNREACHABLE - TRY AGAIN';
+            this.pingStatus = 'SERVICE CHECK FAILED - TRY AGAIN';
         } finally { this.pingBusy = false; }
     },
     json(action, body, auth = false) {
         return this.request(action, { method: 'POST', body: JSON.stringify(body), auth, headers: { 'Content-Type': 'application/json' } });
     },
+    validSession(session) {
+        return session && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(session.user_id || '') &&
+            /^rgat_[a-f0-9]{64}$/.test(session.access_token || '') && /^rgrt_[a-f0-9]{64}$/.test(session.refresh_token || '') &&
+            Number.isSafeInteger(session.expires_at) && session.expires_at >= 0 && typeof session.username === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9 _-]{2,23}$/.test(session.username);
+    },
+    readRemembered() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(this.sessionKey));
+            if (saved?.version === 1 && this.validSession(saved)) {
+                const { user_id, username, access_token, refresh_token, expires_at } = saved;
+                return { version: 1, user_id, username, access_token, refresh_token, expires_at };
+            }
+            localStorage.removeItem(this.sessionKey);
+        } catch { this.clearRemembered(); /* Storage failure never prevents session-only play. */ }
+        return null;
+    },
+    clearRemembered(expectedRefresh) {
+        try {
+            // A stale tab must not erase another tab's newly rotated session.
+            if (expectedRefresh && JSON.parse(localStorage.getItem(this.sessionKey))?.refresh_token !== expectedRefresh) return;
+            localStorage.removeItem(this.sessionKey);
+        } catch { /* Never remove local progress when forgetting a login. */ }
+    },
+    persistSession() {
+        if (!this.rememberSession || !this.validSession(this.session)) return;
+        const { user_id, username, access_token, refresh_token, expires_at } = this.session;
+        try { localStorage.setItem(this.sessionKey, JSON.stringify({ version: 1, user_id, username, access_token, refresh_token, expires_at })); }
+        catch {
+            this.rememberSession = false; this.clearRemembered();
+            this.rememberError = 'Signed in for this session only. Your browser could not save the login.';
+        }
+    },
     async ensureSession() {
         if (!this.session) throw new Error('Log in to use cloud saves.');
         if (this.session.expires_at * 1000 > Date.now() + 60000) return;
-        if (!this.refreshing) this.refreshing = this.json('refresh', { refresh_token: this.session.refresh_token }).then(session => {
-            if (session.user_id !== this.session?.user_id) throw new Error('Account changed. Please log in again.');
-            this.session = session;
+        const original = this.session, serial = this.serial;
+        if (!this.refreshing) this.refreshing = this.json('refresh', { refresh_token: original.refresh_token }).then(session => {
+            if (this.session !== original || this.serial !== serial) throw new Error('Account changed. Please log in again.');
+            if (!this.validSession(session) || session.user_id !== original.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401 });
+            this.session = session; this.persistSession();
+        }).catch(error => {
+            if (error.status === 401) this.clearRemembered(original.refresh_token);
+            throw error;
         }).finally(() => { this.refreshing = null; });
-        await this.refreshing;
+        try { await this.refreshing; }
+        catch (error) {
+            const latest = this.rememberSession && this.readRemembered();
+            if (error.status === 401 && this.session === original && this.serial === serial && latest && latest.user_id === original.user_id && latest.refresh_token !== original.refresh_token) {
+                this.session = latest; return this.ensureSession();
+            }
+            throw error;
+        }
+    },
+    async restoreRemembered() {
+        const saved = this.readRemembered(); if (!saved) return false;
+        const epoch = ++this.restoreEpoch;
+        this.rememberSession = true; this.rememberError = '';
+        let session = saved;
+        try {
+            if (saved.expires_at * 1000 > Date.now() + 60000) {
+                try {
+                    const identity = await this.request('session', { headers: { Authorization: `Bearer ${saved.access_token}` } });
+                    if (identity.user_id !== saved.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401, invalidIdentity: true });
+                    session = { ...saved, username: identity.username };
+                } catch (error) { if (error.status !== 401 || error.invalidIdentity) throw error; session = await this.json('refresh', { refresh_token: saved.refresh_token }); }
+            } else session = await this.json('refresh', { refresh_token: saved.refresh_token });
+            if (epoch !== this.restoreEpoch) return false;
+            if (!this.validSession(session) || session.user_id !== saved.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401 });
+            // Persist a rotated refresh token before any subsequent cloud request.
+            this.session = session; this.persistSession();
+            await this.connectSession(session);
+            return true;
+        } catch (error) {
+            if (epoch !== this.restoreEpoch) return false;
+            if (error.status === 401) { this.clearRemembered(saved.refresh_token); this.clearRemembered(session.refresh_token); this.session = null; this.rememberSession = false; }
+            throw error;
+        }
     },
     metaKey() { return `retrograde_v2_cloud_${this.scope}`; },
     readMeta() {
         try {
             const raw = JSON.parse(localStorage.getItem(this.metaKey()));
             return { revision: Number.isSafeInteger(raw?.revision) && raw.revision >= 0 ? raw.revision : 0,
+                lastSyncedAt: Number(raw?.lastSyncedAt) || 0, jobs: raw?.jobs && typeof raw.jobs === 'object' && !Array.isArray(raw.jobs) ? Object.fromEntries(Object.entries(raw.jobs).filter(([digest,job])=>/^[a-f0-9]{64}$/.test(digest)&&job&&typeof job.id==='string').slice(-192)) : {},
                 dirty: raw?.dirty === true, published: Array.isArray(raw?.published) ? raw.published.filter(v => /^[a-f0-9]{64}$/.test(v)).slice(-192) : [] };
-        } catch { return { revision: 0, dirty: false, published: [] }; }
+        } catch { return { revision: 0, dirty: false, published: [], jobs: {}, lastSyncedAt: 0 }; }
     },
     writeMeta() {
         try { localStorage.setItem(this.metaKey(), JSON.stringify(this.meta)); }
         catch { this.status = 'Cloud sync state could not be stored. Sync again before closing.'; }
     },
     databaseName() { return 'retrograde_v2_fresh1_replays' + (this.scope === 'guest' ? '' : `_${this.scope}`); },
-    markDirty() {
-        if (!this.ready || this.suppress || !this.session) return;
-        this.meta.dirty = true; this.writeMeta();
-        this.status = 'Saved on this device. Cloud sync pending.';
-        if (CloudUI.open) CloudUI.status(this.status);
+    scheduleSync(delay = 5000) {
+        if (!this.session || this.conflict || this.pendingGuest || this.suppress || this.needsAttention) return;
         if (this.timer) clearTimeout(this.timer);
-        if (!this.conflict) this.timer = setTimeout(() => { this.timer = null; this.sync().catch(error => this.showError(error)); }, 5000);
+        const serial=this.serial;
+        this.timer=setTimeout(()=>{this.timer=null;if(this.serial===serial)this.sync().catch(()=>{});},delay);
     },
-    showError(error) { this.status = error.message; if (CloudUI.open) CloudUI.status(this.status); },
+    markDirty() {
+        if (!this.ready || this.suppress || this.scope==='guest') return;
+        if (!this.firstDirtyAt) this.firstDirtyAt=Date.now();
+        this.meta.dirty = true; this.writeMeta();
+        this.status = this.session ? 'Saved on this device. Cloud sync pending.' : 'Saved on this device. Log in again to sync.';
+        if (CloudUI.open) CloudUI.status(this.status);
+        this.scheduleSync(Math.max(0,Math.min(5000,30000-(Date.now()-this.firstDirtyAt))));
+    },
+    showError(error) {
+        this.status=error.message;this.needsAttention=Boolean(error.status && error.status!==429 && error.status<500);
+        if(this.needsAttention){if(this.timer)clearTimeout(this.timer);this.timer=null;if(this.jobTimer)clearTimeout(this.jobTimer);this.jobTimer=null;}
+        if(error.status===401){this.authExpired=true;this.clearRemembered(this.session?.refresh_token);}
+        if (error.status===401) this.status='Please log in again. Your device changes are kept.';
+        else if (!error.status || error.status===429 || error.status>=500) {
+            this.networkOffline=!error.status;
+            const waits=[5000,15000,30000,60000],base=waits[Math.min(this.retryAttempt++,3)];
+            this.scheduleSync(Math.max(base,Math.min(3600000,(error.retryAfter||0)*1000))+Math.floor(Math.random()*1000));
+        }
+        if (CloudUI.open) CloudUI.status(this.status);
+    },
+    pendingRecords() { return Object.values(this.meta.jobs || {}).filter(j=>['queued','verifying'].includes(j.state)); },
+    stateLabel() {
+        if (this.needsAttention || this.conflict || Object.values(this.meta.jobs || {}).some(j=>j.state==='rejected')) return 'NEEDS ATTENTION';
+        if (this.networkOffline) return 'OFFLINE';
+        if (this.uploading) return 'SYNCING';
+        return this.hasUnsyncedChanges() || this.pendingRecords().length ? 'PENDING' : 'SYNCED';
+    },
+    scheduleJobPoll() {
+        if (this.jobTimer) clearTimeout(this.jobTimer);this.jobTimer=null;
+        if (!this.session || this.needsAttention || !this.pendingRecords().length) return;
+        const serial=this.serial;
+        this.jobTimer=setTimeout(()=>{this.jobTimer=null;if(serial===this.serial)this.sync().catch(()=>{});},15000);
+    },
     async switchScope(scope) {
-        this.serial++;
+        this.serial++; this.firstDirtyAt=0;this.retryAttempt=0;this.networkOffline=false;this.needsAttention=false;this.authExpired=false;
+        if(this.jobTimer)clearTimeout(this.jobTimer);this.jobTimer=null;
         if (this.timer) clearTimeout(this.timer); this.timer = null;
         goToMenu();
         await ReplayLibrary.ready;
@@ -15405,10 +15516,17 @@ const CloudAccount = {
         MAX_PARTICLES = saveData.visualEffects === 'high' ? 800 : saveData.visualEffects === 'medium' ? 400 : 200;
         AudioSystem.updateVolumes(); applyRenderScale(saveData.renderScale);
     },
-    async login(username, password, captcha = '') {
+    async login(username, password, captcha = '', keepSignedIn = false) {
+        ++this.restoreEpoch;
         if (this.uploading) await this.uploading;
         const session = await this.json('login', { username, password, captcha });
-        if (!/^[a-f0-9-]{36}$/.test(session.user_id || '')) throw new Error('Invalid account response.');
+        if (!this.validSession(session)) throw new Error('Invalid account response.');
+        this.rememberSession = keepSignedIn; this.rememberError = '';
+        if (!keepSignedIn) this.clearRemembered();
+        await this.connectSession(session);
+        if (this.rememberError) this.status = this.rememberError;
+    },
+    async connectSession(session) {
         let guestBackup = null;
         if (this.scope === 'guest') {
             goToMenu(); storeSaveDataImmediate();
@@ -15418,13 +15536,13 @@ const CloudAccount = {
         this.suppress = true;
         try {
             await this.switchScope(session.user_id);
-            this.session = session;
+            this.session = session; this.persistSession();
             const remote = await this.request('save', { auth: true });
             if (this.meta.dirty && this.meta.revision !== remote.revision) {
                 this.conflict = remote; this.status = 'This device and cloud have different saves. Choose which to keep.';
             } else if (this.meta.dirty) {
                 this.status = 'Local changes are ready to sync.';
-            } else if (remote.url) {
+            } else if (remote.available || remote.url) {
                 await this.restoreRemote(remote);
             } else {
                 if (guestBackup && remote.revision === 0) this.pendingGuest = guestBackup;
@@ -15441,7 +15559,7 @@ const CloudAccount = {
     async bringGuestProgress() {
         if (!this.session || !this.pendingGuest) throw new Error('No guest progress is waiting to transfer.');
         const remote = await this.request('save', { auth: true });
-        if (remote.url || remote.revision !== 0) {
+        if (remote.available || remote.url || remote.revision !== 0) {
             this.pendingGuest = null; this.conflict = remote;
             throw new Error('This account now has a cloud save. Load it before making further changes.');
         }
@@ -15457,33 +15575,29 @@ const CloudAccount = {
         this.pendingGuest = null; this.meta.dirty = true; this.writeMeta();
         await this.sync();
     },
+    async readResponse(response, limit = CloudConfig.maxBytes) {
+        if (!response.ok) throw new Error('Cloud file download failed. Please retry.');
+        if (Number(response.headers.get('content-length')) > limit) throw new Error('Cloud file is too large.');
+        const reader = response.body?.getReader();
+        if (!reader) { const bytes = new Uint8Array(await response.arrayBuffer()); if (bytes.length > limit) throw new Error('Cloud file is too large.'); return bytes; }
+        const chunks = []; let length = 0;
+        while (true) { const {value, done} = await reader.read(); if (done) break; length += value.length; if (length > limit) { await reader.cancel(); throw new Error('Cloud file is too large.'); } chunks.push(value); }
+        const bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; } return bytes;
+    },
     async download(url, limit = CloudConfig.maxBytes) {
         const parsed = new URL(url), base = new URL(CloudConfig.url);
         if (parsed.origin !== base.origin || !parsed.pathname.startsWith('/storage/v1/')) throw new Error('Invalid cloud file address.');
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Cloud file download failed. Please retry.');
-        if (Number(response.headers.get('content-length')) > limit) throw new Error('Cloud file is too large.');
-        if (!response.body?.getReader) {
-            const bytes = new Uint8Array(await response.arrayBuffer());
-            if (bytes.length > limit) throw new Error('Cloud file is too large.'); return bytes;
-        }
-        const reader = response.body.getReader(), chunks = []; let length = 0;
-        while (true) {
-            const { value, done } = await reader.read(); if (done) break;
-            length += value.length; if (length > limit) { await reader.cancel(); throw new Error('Cloud file is too large.'); }
-            chunks.push(value);
-        }
-        const bytes = new Uint8Array(length); let offset = 0;
-        for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; } return bytes;
+        return this.readResponse(response, limit);
     },
     async restoreRemote(remote) {
-        if (!remote.url) throw new Error('There is no cloud backup to load.');
+        if (!remote.available && !remote.url) throw new Error('There is no cloud backup to load.');
         const previousSuppression = this.suppress; this.suppress = true;
         try {
-            const bytes = await this.download(remote.url);
+            const bytes = remote.available ? await this.request('save-file', { auth: true, raw: true, query: { revision: remote.revision, previous: remote.previous ? '1' : '0' } }) : await this.download(remote.url);
             if (!await SaveStore.readBackupFile(bytes.buffer)) throw new Error(loadStatus);
             if (!await SaveStore.restoreBackup()) throw new Error(loadStatus);
-            this.meta.revision = remote.revision; this.meta.dirty = false; this.writeMeta();
+            this.meta.revision = remote.revision; this.meta.dirty = false; this.firstDirtyAt=0; this.meta.lastSyncedAt=Date.now(); this.writeMeta();
             this.conflict = null; this.status = 'Cloud save loaded and recordings checked.';
         } finally { this.suppress = previousSuppression; }
     },
@@ -15509,13 +15623,12 @@ const CloudAccount = {
         if (!this.session || this.suppress || this.conflict || this.pendingGuest) return;
         if (this.uploading) return this.uploading;
         const owner = this.scope, serial = this.serial;
+        if(this.timer)clearTimeout(this.timer);this.timer=null;
         let completed = false;
         this.uploading = (async () => {
-            if (!this.lastCleanup || Date.now() - this.lastCleanup > 3600000) {
-                await this.request('cleanup', { method: 'POST', auth: true }); this.lastCleanup = Date.now();
-            }
             if (this.meta.dirty) {
                 this.status = 'Uploading complete cloud save...';
+                this.firstDirtyAt=0;
                 const sequence = SaveStore.sequence, bytes = await SaveStore.backupFile();
                 if (bytes.length > CloudConfig.maxBytes) throw new Error('Backup exceeds the 16 MB cloud limit. Your complete local backup remains available.');
                 if (this.scope !== owner || this.serial !== serial) return;
@@ -15525,48 +15638,104 @@ const CloudAccount = {
                     if (this.scope !== owner || this.serial !== serial) return;
                     this.meta.revision = result.revision;
                     this.meta.dirty = SaveStore.sequence !== sequence;
+                    if(!this.meta.dirty)this.firstDirtyAt=0;this.meta.lastSyncedAt=Date.now();
                     this.writeMeta(); this.status = this.meta.dirty ? 'Cloud saved. Newer device changes are pending.' : 'Cloud save is up to date.';
                 } catch (error) {
-                    if (error.status === 409) this.conflict = { revision: error.revision };
-                    throw error;
+                    if(error.status===409 || !error.status || error.status>=500){
+                        // A timeout may have happened after commit. Match the exact attempted bytes.
+                        try{const remote=await this.request('save',{auth:true});
+                            if(remote.available && remote.revision===this.meta.revision+1){
+                                const stored=await this.request('save-file',{auth:true,raw:true,query:{revision:remote.revision}});
+                                if(ReplayFormat.digest(stored)===ReplayFormat.digest(bytes)){
+                                    this.meta.revision=remote.revision;this.meta.dirty=SaveStore.sequence!==sequence;
+                                    this.meta.lastSyncedAt=Date.now();if(!this.meta.dirty)this.firstDirtyAt=0;this.writeMeta();error=null;
+                                }
+                            }
+                        }catch{}
+                    }
+                    if(error){if(error.status===409)this.conflict={revision:error.revision};throw error;}
                 }
             }
+            if(this.scope!==owner||this.serial!==serial)return;
             await this.publishRecords();
+            if(this.scope!==owner||this.serial!==serial)return;
+            // Maintenance must never prevent the player's backup or records reaching the server.
+            if (!this.maintenance && (!this.lastCleanup || Date.now() - this.lastCleanup > 3600000)) {
+                const maintenance=this.request('cleanup', { method: 'POST', auth: true });
+                this.maintenance=maintenance;
+                maintenance.then(()=>{if(this.scope===owner&&this.serial===serial)this.lastCleanup=Date.now();})
+                    .catch(()=>{/* A later sync can retry maintenance; the backup is already durable. */})
+                    .finally(()=>{if(this.maintenance===maintenance)this.maintenance=null;});
+            }
+            if(this.scope!==owner||this.serial!==serial)return;
+            this.retryAttempt=0;this.networkOffline=false;this.needsAttention=false;
+            this.status=this.meta.dirty?'New device changes are pending.':this.pendingRecords().length ? `Backup saved. ${this.pendingRecords().length} recording(s) awaiting server verification.` : Object.values(this.meta.jobs||{}).some(j=>j.state==='rejected') ? 'Backup saved. A recording needs attention.' : 'Cloud save and recordings are up to date.';
+            this.scheduleJobPoll();
             completed = true;
             if (CloudUI.open) CloudUI.status(this.status);
-        })().finally(() => {
+        })().catch(error=>{if(this.scope===owner&&this.serial===serial)this.showError(error);throw error;}).finally(() => {
             this.uploading = null;
-            if (completed && this.meta.dirty && !this.timer && this.session && !this.conflict)
-                this.timer = setTimeout(() => { this.timer = null; this.sync().catch(error => this.showError(error)); }, 5000);
+            if (completed && this.meta.dirty && !this.timer) this.scheduleSync();
         });
         return this.uploading;
     },
     hasUnsyncedChanges() {
-        if (!this.session) return false;
+        if (this.scope==='guest') return false;
         if (this.meta.dirty || this.uploading) return true;
         const sent = new Set(this.meta.published);
         return ReplayLibrary.rows().some(entry =>
             (entry.key.startsWith('best:') || entry.key === 'last:campaign') &&
             entry.checked?.completed && ['flight', 'campaign'].includes(entry.replay.header.kind) &&
             entry.replay.header.segments[0].level >= 0 && !ReplayFormat.compatibility(entry.replay) &&
-            !sent.has(entry.checked.digest));
+            !sent.has(entry.checked.digest) && !this.meta.jobs?.[entry.checked.digest]);
     },
     async publishRecords() {
-        const sent = new Set(this.meta.published);
-        for (const entry of ReplayLibrary.rows()) {
-            if (!entry.key.startsWith('best:') && entry.key !== 'last:campaign') continue;
-            if (!entry.checked?.completed || !['flight', 'campaign'].includes(entry.replay.header.kind) ||
-                entry.replay.header.segments[0].level < 0 || ReplayFormat.compatibility(entry.replay)) continue;
-            const digest = entry.checked.digest;
-            if (sent.has(digest)) continue;
-            await this.request('submit', { method: 'POST', auth: true, body: entry.replay.bytes, headers: { 'Content-Type': 'application/octet-stream' } });
-            sent.add(digest); this.meta.published = [...sent].slice(-192); this.writeMeta();
+        const serial=this.serial,sent=new Set(this.meta.published);
+        this.meta.jobs ||= {};
+        const pending=this.pendingRecords();
+        if(pending.length){
+            const result=await this.json('jobs',{ids:pending.map(j=>j.id).slice(0,64)},true);
+            if(serial!==this.serial)return;
+            for(const job of result.jobs){
+                this.meta.jobs[job.digest]={id:job.id,state:job.state,error:job.error,verifier:job.verifier};
+                if(job.state==='accepted')sent.add(job.digest);
+            }
+            this.meta.published=[...sent].slice(-192);this.writeMeta();
+            if(menuScreen==='leaderboards'&&result.jobs.some(j=>j.state==='accepted'))CloudBoard.load();
+        }
+        for(const entry of ReplayLibrary.rows()){
+            if(serial!==this.serial)return;
+            if(!entry.key.startsWith('best:')&&entry.key!=='last:campaign')continue;
+            if(!entry.checked?.completed||!['flight','campaign'].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level<0||ReplayFormat.compatibility(entry.replay))continue;
+            const digest=entry.checked.digest;
+            if(sent.has(digest)||this.meta.jobs[digest])continue;
+            if(this.pendingRecords().length>=2)break;
+            try{
+                const result=await this.request('submit',{method:'POST',auth:true,body:entry.replay.bytes,headers:{'Content-Type':'application/octet-stream'}});
+                if(serial!==this.serial)return;
+                if(result.job)this.meta.jobs[digest]={id:result.job,state:result.state,error:result.error,verifier:result.verifier};
+                else {sent.add(digest);this.meta.published=[...sent].slice(-192);} // Transitional synchronous API.
+                this.writeMeta();
+            }catch(error){
+                if(serial!==this.serial)return;
+                if(error.status===422){this.meta.jobs[digest]={id:'rejected-local',state:'rejected',error:error.message};this.writeMeta();continue;}
+                throw error;
+            }
         }
     },
+    async retryRecordings() {
+        for(const [digest,job] of Object.entries(this.meta.jobs||{})){
+            if(job.state!=='rejected')continue;
+            if(job.id==='rejected-local'){delete this.meta.jobs[digest];continue;}
+            const result=await this.json('retry-job',{id:job.id},true);if(result.resubmit){delete this.meta.jobs[digest];continue;}job.state='queued';job.error=null;
+        }
+        this.writeMeta();await this.sync();
+    },
     async logout() {
+        ++this.restoreEpoch; this.clearRemembered(); this.rememberSession = false; this.rememberError = '';
         if (this.uploading) await this.uploading.catch(() => {});
+        if(this.scope!=='guest'){this.meta.dirty=true;this.writeMeta();}
         if (this.session) {
-            this.meta.dirty = true; this.writeMeta();
             try { await this.request('logout', { method: 'POST', auth: true }); } catch { /* Offline logout still clears this browser's session. */ }
         }
         this.suppress = true;
@@ -15650,20 +15819,29 @@ const CloudBoard = {
             width: `${72 * sx}px`, height: `${40 * sy}px`, fontSize: `${18 * sy}px` });
         if (document.activeElement !== input) input.value = String(this.level + 1);
     },
+    requireAccount() {
+        if (CloudAccount.session) return true;
+        this.rows = []; this.selected = null; this.request++;
+        CloudUI.leaderboardReturn = menuScreen === 'leaderboards' ? (this.returnMenu || 'main') : menuScreen;
+        if(menuScreen==='leaderboards')menuScreen=this.returnMenu || 'main';
+        CloudUI.show('leaderboard-login'); return false;
+    },
     async load() {
+        if (!this.requireAccount()) return;
         const request = ++this.request; this.status = 'Loading leaderboard...'; this.rows = []; this.selected = null;
         try {
-            const result = await CloudAccount.request('board', { query: { kind: this.kind, level: this.level, metric: this.metric, page: this.page } });
+            const result = await CloudAccount.request('board', { auth: true, query: { kind: this.kind, level: this.level, metric: this.metric, page: this.page } });
             if (request !== this.request) return;
             this.rows = result.rows; this.status = this.rows.length ? '' : 'No checked runs have been published here yet.';
-        } catch (error) { if (request === this.request) this.status = error.message; }
+        } catch (error) { if (request === this.request) { this.status = error.message; if (error.status === 401) { CloudAccount.session = null; this.requireAccount(); } } }
     },
     async action(index, mode) {
+        if (!this.requireAccount()) return;
         const row = this.rows[index]; if (!row || this.busy) return;
         this.busy = true; const request = this.request;
         try {
             this.status = 'Downloading and checking replay...';
-            const result = await CloudAccount.request('replay', { query: { id: row.id } });
+            const result = await CloudAccount.request('replay', { auth: true, query: { id: row.id } });
             const bytes = await CloudAccount.download(result.url);
             if (ReplayFormat.digest(bytes) !== row.digest || result.digest !== row.digest) throw new Error('Leaderboard replay digest does not match.');
             const checked = await ReplayFormat.verify(bytes), h = checked.replay.header;
@@ -15679,7 +15857,7 @@ const CloudBoard = {
                 runState = 'inactive'; runInvalidated = false; RunTiming.reset(); loadLevel(currentLevelIndex);
             }
             this.status = '';
-        } catch (error) { this.status = error.message; }
+        } catch (error) { this.status = error.message; if (error.status === 401) { CloudAccount.session = null; this.requireAccount(); } }
         finally { this.busy = false; }
     },
     draw() {
@@ -15711,8 +15889,8 @@ const CloudBoard = {
         drawMenuFooter('back_leaderboards', 'REPLAY CHECKED');
     },
     button(id) {
-        if (id === 'leaderboards') { this.page = 0; menuScreen = 'leaderboards'; this.load(); return true; }
-        if (id === 'back_leaderboards') { this.request++; menuScreen = 'main'; return true; }
+        if (id === 'leaderboards') { if (!this.requireAccount()) return true; this.returnMenu = menuScreen; this.page = 0; menuScreen = 'leaderboards'; this.load(); return true; }
+        if (id === 'back_leaderboards') { this.request++; menuScreen = this.returnMenu || 'main'; return true; }
         if (!id.startsWith('board_')) return false;
         if (id.startsWith('board_select_')) { this.selected = Number(id.slice(13)); return true; }
         if (id === 'board_watch' || id === 'board_race') { this.action(this.selected, id.slice(6)); return true; }
@@ -15728,6 +15906,12 @@ const CloudBoard = {
 };
 
 const CloudUI = {
+    leaderboardReturn: null,
+    resumeLeaderboard() {
+        if (this.leaderboardReturn === null || !CloudAccount.session || CloudAccount.pendingGuest || CloudAccount.conflict) return false;
+        CloudBoard.returnMenu = this.leaderboardReturn; this.leaderboardReturn = null;
+        this.hide(); menuScreen = 'leaderboards'; CloudBoard.page = 0; CloudBoard.load(); return true;
+    },
     root: null, open: false, guestChosen: false, busy: false, recoveryCode: '', screen: 'start',
     init() {
         CloudAccount.ready = true;
@@ -15767,16 +15951,19 @@ const CloudUI = {
                 button.title = button.getAttribute('aria-label'); return;
             }
             if (this.busy) return;
+            if (action === 'restore-login') { this.restoreSavedLogin(); return; }
             if (['start', 'login', 'signup', 'recover', 'account', 'rotate'].includes(action)) this.show(action);
-            else if (action === 'guest') this.perform(async () => { if (CloudAccount.session) await CloudAccount.logout(); this.guestChosen = true; this.hide(); });
-            else if (action === 'close') this.hide();
+            else if (action === 'guest') this.perform(async () => { if (CloudAccount.scope!=='guest') await CloudAccount.logout(); this.guestChosen = true; this.hide(); });
+            else if (action === 'leaderboard-back') { this.leaderboardReturn = null; this.hide(); }
+            else if (action === 'close') { if (!this.resumeLeaderboard()) this.hide(); }
             else if (action === 'logout') this.perform(async () => { await CloudAccount.logout(); this.guestChosen = true; this.hide(); });
-            else if (action === 'bring-guest') this.perform(async () => { await CloudAccount.bringGuestProgress(); this.show('account'); });
-            else if (action === 'start-fresh') this.perform(async () => { await CloudAccount.startFresh(); this.show('account'); });
+            else if (action === 'bring-guest') this.perform(async () => { await CloudAccount.bringGuestProgress(); if (!this.resumeLeaderboard()) this.show('account'); });
+            else if (action === 'start-fresh') this.perform(async () => { await CloudAccount.startFresh(); if (!this.resumeLeaderboard()) this.show('account'); });
+            else if (action === 'retry-recordings') this.perform(async () => { await CloudAccount.retryRecordings(); this.show('account'); });
             else if (action === 'sync') this.perform(async () => { await CloudAccount.sync(); this.show('account'); });
             else if (action === 'previous') this.perform(async () => { await CloudAccount.choosePrevious(); this.show('account'); });
-            else if (action === 'cloud') this.perform(async () => { await CloudAccount.chooseCloud(); this.show('account'); });
-            else if (action === 'device') this.perform(async () => { await CloudAccount.chooseDevice(); this.show('account'); });
+            else if (action === 'cloud') this.perform(async () => { await CloudAccount.chooseCloud(); if (!this.resumeLeaderboard()) this.show('account'); });
+            else if (action === 'device') this.perform(async () => { await CloudAccount.chooseDevice(); if (!this.resumeLeaderboard()) this.show('account'); });
             else if (action === 'retry') this.perform(async () => {
                 const remote = await CloudAccount.request('save', { auth: true }); CloudAccount.conflict = remote; this.show('account');
             });
@@ -15793,10 +15980,10 @@ const CloudUI = {
             const action = event.target.dataset.action;
             this.perform(async () => {
                 if (action === 'login') {
-                    await CloudAccount.login(data.username, data.password, data['cf-turnstile-response']);
+                    await CloudAccount.login(data.username, data.password, data['cf-turnstile-response'], data.remember === 'on');
                     this.guestChosen = true;
-                    if (CloudAccount.conflict || CloudAccount.pendingGuest) this.show('account'); else this.hide();
-                    CloudAccount.sync().catch(error => CloudAccount.showError(error));
+                    if (CloudAccount.conflict || CloudAccount.pendingGuest || CloudAccount.rememberError) this.show('account'); else if (!this.resumeLeaderboard()) this.hide();
+                    CloudAccount.sync().catch(()=>{});
                 } else {
                     if (action !== 'rotate' && data.password !== data.confirm) throw new Error('Passwords do not match.');
                     const result = await CloudAccount.json(action === 'rotate' ? 'rotate-recovery' : action,
@@ -15807,7 +15994,21 @@ const CloudUI = {
                 }
             });
         });
-        this.show('start');
+        window.addEventListener('online',()=>{CloudAccount.networkOffline=false;CloudAccount.retryAttempt=0;CloudAccount.scheduleSync(0);});
+        this.show('start'); this.startup = this.restoreSavedLogin();
+    },
+    async restoreSavedLogin() {
+        if (!CloudAccount.readRemembered() || this.busy) return;
+        this.busy = true; this.show('restoring');
+        try {
+            if (!await CloudAccount.restoreRemembered()) return;
+            this.guestChosen = true;
+            if (CloudAccount.conflict || CloudAccount.pendingGuest || CloudAccount.rememberError) this.show('account'); else this.hide();
+            CloudAccount.sync().catch(()=>{});
+        } catch (error) {
+            this.show(CloudAccount.session ? 'account' : 'start');
+            this.status(error.status === 401 ? 'Your saved login expired. Please log in again. Your device progress is kept.' : 'Could not reconnect. Your saved login and device progress are kept. You can retry or continue as guest.');
+        } finally { this.busy = false; }
     },
     status(message) { const status = this.root?.querySelector('[data-account-status]') || this.root?.querySelector('[data-status]'); if (status) status.textContent = message; },
     async perform(work) {
@@ -15837,18 +16038,23 @@ const CloudUI = {
             return `<div class="cloud-password-field"><label for="cloud-${name}">${label}</label><div class="cloud-password"><input id="cloud-${name}" type="password" name="${name}" autocomplete="${current ? 'current-password' : 'new-password'}" ${current ? '' : 'minlength="6"'} required><button type="button" class="cloud-eye" data-cloud="toggle-password" data-target="cloud-${name}" data-field-label="${label.toLowerCase()}" aria-label="Show ${label.toLowerCase()}" title="Show ${label.toLowerCase()}" aria-controls="cloud-${name}" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="cloud-eye-slash" d="m3 3 18 18"/></svg></button></div></div>`;
         };
         let contents = '';
-        if (screen === 'start') contents = `<h1>RETROGRADE V2</h1>${button('login', 'LOG IN')}${button('signup', 'CREATE ACCOUNT')}${button('guest', 'CONTINUE AS GUEST')}<p>Guest progress stays on this device.</p>`;
+        if (screen === 'restoring') contents = '<h1>SIGNING IN</h1><p>Restoring your saved login...</p>';
+        else if (screen === 'start') contents = `<h1>RETROGRADE V2</h1>${button('login', 'LOG IN')}${button('signup', 'CREATE ACCOUNT')}${button('guest', 'CONTINUE AS GUEST')}<p>Guest progress stays on this device.</p>${CloudAccount.readRemembered() ? button('restore-login', 'RETRY SAVED LOGIN') : ''}`;
+        else if (screen === 'leaderboard-login') contents = `<h1>ACCOUNT REQUIRED</h1><p>Log in or create an account to view leaderboards.</p>${button('login', 'LOG IN')}${button('signup', 'CREATE ACCOUNT')}${button('leaderboard-back', 'BACK')}`;
         else if (screen === 'code') contents = `<h1>SAVE YOUR RECOVERY CODE</h1><p>Keep this code private. It can reset your password. Without your password or this code, your account cannot be recovered.</p><textarea data-code readonly aria-label="Recovery code"></textarea><div class="cloud-actions">${button('copy', 'COPY')}${button('download', 'DOWNLOAD')}</div>${button('code-saved', 'I SAVED MY CODE')}`;
         else if (screen === 'account') {
             contents = `<h1 data-account-name></h1><p data-account-status></p>${button('sync', 'SYNC NOW')}${button('rotate', 'REPLACE RECOVERY CODE')}${button('previous', 'RESTORE PREVIOUS CLOUD BACKUP')}`;
+            if(CloudAccount.authExpired)contents+=button('login','LOG IN AGAIN');
+            contents += `<p>Last cloud backup: ${CloudAccount.meta.lastSyncedAt ? new Date(CloudAccount.meta.lastSyncedAt).toLocaleString() : 'Not uploaded yet'}</p><div data-rejected></div>`;
+            if(Object.values(CloudAccount.meta.jobs||{}).some(j=>j.state==='rejected'))contents+=button('retry-recordings','RETRY REJECTED RECORDINGS');
             if (CloudAccount.pendingGuest) contents = `<h1>BRING YOUR PROGRESS?</h1><p>This new account can start with your guest times, progress, settings, and recordings. Your original guest save stays on this device.</p>${button('bring-guest', 'BRING MY GUEST PROGRESS')}${button('start-fresh', 'START WITH AN EMPTY ACCOUNT')}`;
             if (CloudAccount.conflict) contents += CloudAccount.conflict.unavailable ? button('retry', 'RETRY CLOUD CONNECTION') : `<p>Choose carefully. The selected save replaces the other version.</p>${button('cloud', 'LOAD CLOUD SAVE')}${button('device', 'KEEP THIS DEVICE SAVE')}`;
             contents += button('logout', 'LOG OUT') + button('close', 'BACK');
         } else {
             const title = { login: 'LOG IN', signup: 'CREATE ACCOUNT', recover: 'RESET PASSWORD', rotate: 'REPLACE RECOVERY CODE' }[screen];
-            contents = `<h1>${title}</h1><form data-action="${screen}">${screen === 'rotate' ? '' : username}${screen === 'recover' ? '<label>Recovery code<input name="code" autocomplete="off" required></label>' : ''}${pass(screen === 'recover' ? 'New password' : 'Password')}${screen === 'login' || screen === 'rotate' ? '' : pass('Confirm password', 'confirm')}<div data-captcha></div><button type="submit">${title}</button></form>`;
+            contents = `<h1>${title}</h1><form data-action="${screen}">${screen === 'rotate' ? '' : username}${screen === 'recover' ? '<label>Recovery code<input name="code" autocomplete="off" required></label>' : ''}${pass(screen === 'recover' ? 'New password' : 'Password')}${screen === 'login' || screen === 'rotate' ? '' : pass('Confirm password', 'confirm')}${screen === 'login' ? '<label class="cloud-remember"><input type="checkbox" name="remember" checked>Keep me signed in</label>' : ''}<div data-captcha></div><button type="submit">${title}</button></form>`;
             if (screen === 'login') contents += button('recover', 'FORGOT PASSWORD');
-            contents += button(CloudAccount.session ? 'account' : 'start', 'BACK');
+            contents += button(CloudAccount.session ? 'account' : this.leaderboardReturn !== null ? 'leaderboard-back' : 'start', 'BACK');
         }
         this.root.innerHTML = `<div class="cloud-card">${contents}<p data-status role="status" aria-live="polite"></p></div>`;
         if (screen === 'code') this.root.querySelector('[data-code]').value = this.recoveryCode;
@@ -15856,6 +16062,8 @@ const CloudUI = {
             const name = this.root.querySelector('[data-account-name]'), status = this.root.querySelector('[data-account-status]');
             if (name) name.textContent = CloudAccount.session.username;
             if (status) status.textContent = CloudAccount.status;
+            const rejected=this.root.querySelector('[data-rejected]');
+            if(rejected)for(const job of Object.values(CloudAccount.meta.jobs||{}).filter(j=>j.state==='rejected')){const p=document.createElement('p');p.textContent=job.error||'Recording rejected.';rejected.appendChild(p);}
         }
         this.root.querySelector('input, button')?.focus();
         if (['login', 'signup', 'recover', 'rotate'].includes(screen)) this.captcha();
