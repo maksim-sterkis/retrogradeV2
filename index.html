@@ -16287,7 +16287,27 @@ const CloudBoard = {
             const result = await CloudAccount.request('board', { auth: true, query: { kind: this.kind, level: this.level, metric: this.metric, page: this.page } });
             if (request !== this.request) return;
             this.rows = result.rows; this.status = this.rows.length ? '' : 'No checked runs have been published here yet.';
+            if (this.kind === 'campaign') this.loadRunTimes(request, this.rows);
         } catch (error) { if (request === this.request) { this.status = error.message; if (error.status === 401) { CloudAccount.session = null; this.requireAccount(); } } }
+    },
+    async loadRunTimes(request, rows) {
+        // The existing leaderboard returns one metric per row. Read the paired
+        // time from that row's own verified replay, never another run's record.
+        let next = 0;
+        const worker = async () => {
+            while (request === this.request && next < rows.length) {
+                const row = rows[next++];
+                try {
+                    const result = await CloudAccount.request('replay', { auth: true, query: { id: row.id } });
+                    const bytes = await CloudAccount.download(result.url);
+                    if (ReplayFormat.digest(bytes) !== row.digest || result.digest !== row.digest) throw Error('Replay digest mismatch');
+                    const checked = await ReplayFormat.verify(bytes);
+                    if (!checked.completed || checked.replay.header.kind !== 'campaign' || !ReplayFormat.ticksEqual(checked[this.metric + 'Ticks'], row.ticks)) throw Error('Replay time mismatch');
+                    if (request === this.request) row.runTimes = {igt: checked.igtTicks, rta: checked.rtaTicks};
+                } catch (error) { if (request === this.request) { row.runTimes = null; row.runError = error.message || 'Could not load the recording.'; this.status = `RTA: ${row.runError}`; } }
+            }
+        };
+        await Promise.all(Array.from({length: Math.min(3, rows.length)}, worker));
     },
     async action(index, mode) {
         if (!this.requireAccount()) return;
@@ -16299,7 +16319,7 @@ const CloudBoard = {
             const bytes = await CloudAccount.download(result.url);
             if (ReplayFormat.digest(bytes) !== row.digest || result.digest !== row.digest) throw new Error('Leaderboard replay digest does not match.');
             const checked = await ReplayFormat.verify(bytes), h = checked.replay.header;
-            if (!checked.completed || h.kind !== this.kind || (h.kind === 'flight' && h.segments[0].level !== this.level) || checked[this.metric + 'Ticks'] !== row.ticks) throw new Error('Leaderboard time does not match its recording.');
+            if (!checked.completed || h.kind !== this.kind || (h.kind === 'flight' && h.segments[0].level !== this.level) || !ReplayFormat.ticksEqual(checked[this.metric + 'Ticks'], row.ticks)) throw new Error('Leaderboard time does not match its recording.');
             if (request !== this.request || menuScreen !== 'leaderboards') return;
             const entry = ReplayLibrary.entry('import:cloud', checked.replay, checked);
             if (mode === 'watch') {
@@ -16322,15 +16342,15 @@ const CloudBoard = {
             drawUIButton('board_level_prev', '<', 760, 170, 50, 40, 'normal', this.level === 0);
             ctx.font = '16px monospace'; ctx.fillStyle = '#dce7ef'; ctx.textAlign = 'center'; ctx.fillText('LEVEL', 861, 197);
             drawUIButton('board_level_next', '>', 1010, 170, 50, 40, 'normal', this.level === levels.length - 1);
-        } else {
-            drawUIButton('board_rta', 'RTA', 760, 170, 140, 40, this.metric === 'rta' ? 'primary' : 'normal');
-            drawUIButton('board_igt', 'IGT', 920, 170, 140, 40, this.metric === 'igt' ? 'primary' : 'normal');
         }
         for (const [index, row] of this.rows.entries()) {
             const y = 236 + index * 15;
             ctx.font = '13px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = this.selected === index ? '#00e8dc' : '#dce7ef';
             ctx.fillText(`${String(this.page * 20 + index + 1).padStart(2)}  ${String(row.username).slice(0, 24)}`, 230, y);
-            ctx.textAlign = 'right'; ctx.fillText(`${(row.ticks / 120).toFixed(3)}s`, 1020, y);
+            ctx.textAlign = 'right';
+            const time = ticks => `${(ticks / 120).toFixed(3)}s`;
+            const value = this.kind === 'campaign' ? `IGT ${time(row.ticks)}   RTA ${row.runTimes ? time(row.runTimes.rta) : row.runTimes === null ? 'unavailable' : '...'}` : time(row.ticks);
+            ctx.fillText(value, 1020, y);
             activeUIButtons.push({ id: `board_select_${index}`, x: 220, y: y - 13, w: 840, h: 16 });
         }
         ctx.font = '12px monospace'; ctx.fillStyle = '#9baebb'; ctx.textAlign = 'left'; ctx.fillText(fitMenuText(this.status, 840), 220, 585);
@@ -16346,11 +16366,10 @@ const CloudBoard = {
         if (id === 'leaderboards') { if (!this.requireAccount()) return true; this.returnMenu = menuScreen; this.page = 0; menuScreen = 'leaderboards'; this.load(); return true; }
         if (id === 'back_leaderboards') { this.request++; menuScreen = this.returnMenu || 'main'; return true; }
         if (!id.startsWith('board_')) return false;
-        if (id.startsWith('board_select_')) { this.selected = Number(id.slice(13)); return true; }
+        if (id.startsWith('board_select_')) { this.selected = Number(id.slice(13)); if (this.rows[this.selected]?.runError) this.status = this.rows[this.selected].runError; return true; }
         if (id === 'board_watch' || id === 'board_race') { this.action(this.selected, id.slice(6)); return true; }
         if (id === 'board_flight') { this.kind = 'flight'; this.metric = 'igt'; this.page = 0; }
         else if (id === 'board_campaign') { this.kind = 'campaign'; this.page = 0; }
-        else if (id === 'board_rta' || id === 'board_igt') { this.metric = id.slice(6); this.page = 0; }
         else if (id === 'board_level_prev') { this.level = Math.max(0, this.level - 1); this.page = 0; }
         else if (id === 'board_level_next') { this.level = Math.min(levels.length - 1, this.level + 1); this.page = 0; }
         else if (id === 'board_prev') this.page = Math.max(0, this.page - 1);
