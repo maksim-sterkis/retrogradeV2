@@ -235,6 +235,112 @@
 .cloud-card label.cloud-remember { display: flex; align-items: center; gap: 12px; cursor: pointer; text-transform: none; }
 .cloud-card .cloud-remember input { display: inline-block; width: 20px; height: 20px; margin: 0; padding: 0; accent-color: #00d7cb; flex: 0 0 auto; }
 
+/* Operations use the same square controls, cyan accents and opaque menu surface. */
+#game-operations, #game-operations * { box-sizing: border-box; }
+#game-operations {
+    position: fixed; inset: 0; z-index: 1000;
+    place-items: safe center; padding: 32px 24px; overflow-y: auto;
+    background: #050b10; color: #dce7ef; font: 16px/1.5 monospace;
+    scrollbar-width: thin; scrollbar-color: #334155 #050b10;
+}
+.ops-panel { width: min(100%, 560px); padding: 16px 0; }
+#game-operations[data-page="developer"] .ops-panel { width: min(100%, 1000px); }
+.ops-header {
+    position: relative; padding: 0 0 24px; margin-bottom: 24px;
+    border-bottom: 1px solid #293946;
+}
+.ops-brand { margin: 0 0 6px; color: #8ea8b8; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
+.ops-header h1 { margin: 0; color: #edf4f8; font: bold 32px/1.2 monospace; letter-spacing: .5px; }
+#game-operations p { overflow-wrap: anywhere; }
+#game-operations button {
+    appearance: none; border: 2px solid #334155; border-radius: 0;
+    background: #050b10; color: #dce7ef; font: bold 14px/1.2 monospace;
+    min-height: 44px; padding: 12px 18px; cursor: pointer;
+}
+#game-operations button:hover { color: #00e8dc; border-color: #00d7cb; background: #042024; }
+#game-operations button:disabled { opacity: .4; cursor: default; }
+#game-operations :focus-visible { outline: 2px solid #00e8dc; outline-offset: 3px; }
+#game-operations .ops-back { position: absolute; right: 0; bottom: 24px; min-width: 100px; }
+#game-operations .ops-primary { border-color: #00d7cb; color: #00e8dc; background: #042024; }
+#game-operations .ops-primary:hover { background: #083239; }
+#game-operations label { display: flex; flex-direction: column; gap: 8px; color: #8ea8b8; font: bold 12px/1.5 monospace; text-transform: uppercase; min-width: 0; }
+#game-operations input:not([type="checkbox"]), #game-operations select, #game-operations textarea {
+    display: block; width: 100%; min-width: 0; min-height: 46px; padding: 12px;
+    border: 2px solid #334155; border-radius: 0; background: #03080c;
+    color: #edf4f8; color-scheme: dark; font: 14px/1.4 monospace;
+}
+#game-operations select { cursor: pointer; }
+#game-operations textarea { min-height: 120px; resize: vertical; }
+#game-operations [hidden] { display: none !important; }
+#game-operations input::placeholder, #game-operations textarea::placeholder { color: #667d8d; opacity: 1; }
+#game-operations .ops-checkbox { flex-direction: row; align-items: center; gap: 10px; align-self: end; min-height: 46px; }
+#game-operations input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex: 0 0 auto; accent-color: #00d7cb; order: -1; }
+.ops-intro { color: #91a3b3; margin: 0 0 24px; }
+.ops-result { color: #83d7c9; font-size: 13px; margin: 0 0 20px; }
+.ops-result:empty { display: none; }
+.ops-feedback-form { display: grid; }
+#game-operations .ops-feedback-form textarea { font-size: 16px; min-height: 160px; }
+.ops-counter { color: #91a3b3; font-size: 12px; text-align: right; margin: 8px 0 24px; }
+#game-operations .ops-feedback-form > button { width: 100%; min-height: 52px; font-size: 18px; }
+.ops-server-status { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 18px; border: 1px solid #293946; background: #080f16; }
+.ops-server-status p { margin: 0; color: #91a3b3; font-size: 13px; }
+.ops-server-status [data-current-status] { color: #83d7c9; }
+.ops-timezone { margin: 10px 0 24px; color: #718a9b; font-size: 11px; }
+.ops-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 24px; }
+#game-operations .ops-tabs button { padding: 12px 8px; }
+#game-operations .ops-tabs button[aria-pressed="true"] { border-color: #00d7cb; color: #00e8dc; background: #042024; }
+.ops-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.ops-start-control { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+#game-operations .ops-start-control button[aria-pressed="true"] { color: #00e8dc; border-color: #00d7cb; background: #042024; }
+#game-operations .ops-start-control input:disabled { opacity: .45; }
+.ops-wide, .ops-empty { grid-column: 1 / -1; }
+.ops-empty { margin: 0; color: #91a3b3; padding: 20px 0; font-size: 14px; }
+.ops-preview { padding: 16px; margin: 0; border-left: 2px solid #00d7cb; background: #08171d; color: #b7cccF; font-size: 13px; }
+.ops-form-actions { display: flex; justify-content: flex-end; align-items: end; gap: 20px; border-top: 1px solid #293946; padding-top: 24px; margin-top: 24px; }
+.ops-output { display: grid; gap: 12px; margin-top: 24px; }
+.ops-output:empty { display: none; }
+.ops-output > p { margin: 0; color: #91a3b3; font-size: 13px; }
+.ops-entry { padding: 18px; border: 1px solid #334155; background: #080f16; }
+.ops-entry p { margin: 0 0 14px; color: #b7c9d5; font-size: 14px; }
+#game-operations .ops-entry button { margin: 0 8px 0 0; min-height: 36px; padding: 8px 14px; font-size: 12px; }
+#game-operations[data-page="maintenance"] .ops-panel > p:not(.ops-result) { color: #91a3b3; }
+#game-operations[data-page="maintenance"] .ops-panel > button { width: 100%; margin-top: 16px; }
+@media (max-width: 640px) {
+    #game-operations { padding: 24px 20px; }
+    .ops-header h1 { font-size: 26px; }
+    .ops-header { padding-bottom: 20px; margin-bottom: 20px; }
+    #game-operations .ops-back { bottom: 20px; min-width: 72px; padding: 10px; font-size: 12px; }
+    .ops-tabs { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .ops-fields, .ops-form-actions, .ops-server-status { grid-template-columns: 1fr; }
+    .ops-form-actions { gap: 16px; }
+    .ops-form-actions > button { width: 100%; }
+    #game-operations[data-page="maintenance"] .ops-header h1 { font-size: 24px; }
+}
+
+/* Maintenance owns the viewport, including while account UI is suspended. */
+#game-operations[data-page="maintenance"] {
+    padding: clamp(24px, 5vw, 72px); place-items: stretch;
+}
+#game-operations[data-page="maintenance"] .ops-panel {
+    width: 100%; min-height: calc(100dvh - 2 * clamp(24px, 5vw, 72px));
+    padding: 0; display: grid; grid-template-rows: auto minmax(240px, 1fr) auto;
+}
+#game-operations[data-page="maintenance"] .ops-header h1 { font-size: clamp(30px, 5vw, 72px); }
+#game-operations[data-page="maintenance"] .ops-header { margin-bottom: 0; padding-bottom: 28px; }
+.ops-maintenance-body { width: min(100%, 1080px); align-self: center; padding: 48px 0; }
+.ops-maintenance-label { margin: 0 0 20px; color: #8ea8b8; font-size: 12px; letter-spacing: 2px; }
+.ops-maintenance-message { margin: 0 0 32px; color: #edf4f8; font-size: clamp(24px, 3vw, 44px); line-height: 1.4; }
+.ops-maintenance-return { border-left: 3px solid #00d7cb; padding: 14px 20px; color: #83d7c9; font-size: clamp(16px, 1.5vw, 22px); }
+.ops-maintenance-help { color: #91a3b3; font-size: 15px; max-width: 720px; line-height: 1.8; margin: 28px 0 0; }
+.ops-maintenance-actions { display: flex; flex-wrap: wrap; gap: 16px; padding-top: 24px; border-top: 1px solid #293946; }
+#game-operations .ops-maintenance-actions button { min-width: 220px; min-height: 52px; }
+.ops-maintenance-actions .ops-result { width: 100%; margin: 0; }
+@media (max-width: 640px) {
+    .ops-maintenance-body { padding: 32px 0; }
+    #game-operations .ops-maintenance-actions button { width: 100%; min-width: 0; }
+    .ops-maintenance-label { font-size: 10px; }
+}
+
     </style>
 </head>
 
@@ -1348,6 +1454,72 @@ const V1_COURSE_LAYOUTS = [
 
     </script>
     <script>
+// Shared client/server upgrade rules. Server export is generated by the build.
+const V21Upgrade = {
+    version: '2.1.0', epoch: 21,
+    appearance() { return {base:'black',middle:'none',top:'none',middleColor:'white',topColor:'white'}; },
+    game(source, force = false) {
+        if (!source || typeof source !== 'object' || Array.isArray(source)) throw Error('Invalid game save.');
+        if (source.competitiveEpoch !== undefined && source.competitiveEpoch !== 0 && source.competitiveEpoch !== this.epoch)
+            throw Error('Unsupported competitive save version. Existing data is preserved.');
+        if (!force && source.competitiveEpoch === this.epoch) return source;
+        const game = JSON.parse(JSON.stringify(source));
+        game.competitiveEpoch = this.epoch;
+        game.bestLevels = Array(Array.isArray(game.bestLevels)?game.bestLevels.length:30).fill(null);
+        game.bestRTASplits = Array(game.bestLevels.length).fill(null);
+        game.bestRTA = game.bestIGT = game.bestTutorial = null;
+        game.recordEvidence = {};
+        game.campaignProgress = game.casualRTA = game.casualIGT = 0;
+        game.casualLayoutValid = game.casualTimingValid = true;
+        game.replayGeneration = 'v21';
+        game.cosmetics = {...game.cosmetics,selected:this.appearance()};
+        return game;
+    },
+    eligibleReplay(header) {
+        return header?.version===2 && header.gameVersion===this.version && header.rules==='v2-dt-1';
+    },
+    canonical(value) {
+        return JSON.stringify(value, (key,item)=>item && typeof item==='object' && !Array.isArray(item)
+            ?Object.fromEntries(Object.keys(item).sort().map(name=>[name,item[name]])):item);
+    },
+    checksum(value) {
+        let crc=0xffffffff;
+        const text=this.canonical(value);
+        for(let index=0;index<text.length;index++) {
+            const code=text.charCodeAt(index);
+            for(const byte of [code&255,code>>>8]) {
+                crc^=byte;
+                for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);
+            }
+        }
+        return ((crc^0xffffffff)>>>0).toString(16).padStart(8,'0');
+    },
+    async resetCloudFile(blob) {
+        let bytes=new Uint8Array(await blob.arrayBuffer());
+        // Historical downloads used either raw JSON or the RGSV compression wrapper.
+        if(bytes[0]===82&&bytes[1]===71&&bytes[2]===83&&bytes[3]===86) {
+            const codec=bytes[4];bytes=bytes.subarray(5);
+            if(codec===1) {
+                const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+                const parts=[];let size=0;
+                while(true){const result=await reader.read();if(result.done)break;size+=result.value.length;
+                    if(size>80*1024*1024){await reader.cancel();throw Error('Expanded save exceeds the upgrade limit.');}parts.push(result.value);}
+                bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
+            } else if(codec!==0)throw Error('Unsupported backup encoding.');
+        }
+        const envelope=JSON.parse(new TextDecoder().decode(bytes)),{checksum,...body}=envelope;
+        if(envelope.format!=='retrograde-v2-backup'||envelope.version!==1||envelope.saveEpoch!==1||checksum!==this.checksum(body)||
+            !envelope.payload?.editor||!envelope.payload?.game)throw Error('Cloud backup could not be validated.');
+        const payload={game:this.game(envelope.payload.game,true),editor:envelope.payload.editor};
+        const next={...body,payload,savedAt:Date.now()};
+        const raw=new TextEncoder().encode(JSON.stringify({...next,checksum:this.checksum(next)}));
+        const compressed=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+        const result=new Uint8Array(5+compressed.length);result.set([82,71,83,86,1]);result.set(compressed,5);return result;
+    }
+};
+
+    </script>
+    <script>
 // Local snapshots and portable backups share one validated, versioned payload.
 // CRC32 detects damaged data; local saves are not authenticated run evidence.
 function cloneSave(value) { return JSON.parse(JSON.stringify(value)); }
@@ -1372,7 +1544,8 @@ function fasterTime(a, b) {
 }
 
 const SaveStore = {
-    keys: ['retrograde_v2_fresh1_snapshot_a', 'retrograde_v2_fresh1_snapshot_b'],
+    keys: ['retrograde_v21_snapshot_a', 'retrograde_v21_snapshot_b'],
+    legacyKeys: ['retrograde_v2_fresh1_snapshot_a', 'retrograde_v2_fresh1_snapshot_b'],
     legacyEditor: { library: 'retrograde_v2_editor_levels', draft: 'retrograde_v2_editor_draft', preferences: 'retrograde_v2_editor_grid' },
     writer: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
     checkpointDirty: false, sequence: 0, base: null, editor: null, ready: false, batchingEditor: false,
@@ -1415,8 +1588,8 @@ const SaveStore = {
         if (checksum !== saveChecksum(body) || !Number.isSafeInteger(envelope.sequence) || envelope.sequence < 1 ||
             !Number.isFinite(envelope.savedAt) || typeof envelope.writer !== 'string') throw new Error('Damaged save snapshot.');
         const payload=this.normalizePayload(envelope.payload);
-        if(format==='retrograde-v2-backup')payload.replays=ReplayLibrary.validateArchive(envelope.payload.replays||{version:1,files:[],entries:[]});
-        return { ...envelope, payload };
+        if(format==='retrograde-v2-backup'&&envelope.payload.game.competitiveEpoch===V21Upgrade.epoch&&envelope.payload.replays)payload.replays=ReplayLibrary.validateArchive(envelope.payload.replays);
+        return { ...envelope, payload, upgraded:envelope.payload.game.competitiveEpoch!==V21Upgrade.epoch };
     },
     readItem(key) {
         try { return localStorage.getItem(key); }
@@ -1425,7 +1598,9 @@ const SaveStore = {
     readSlots() {
         const valid = [], damaged = [];
         let present = false, future = false;
-        for (const [index, key] of this.keys.entries()) {
+        const legacy=this.keys.every(key=>this.readItem(key)===null);
+        const sourceKeys=legacy?this.legacyKeys:this.keys;
+        for (const [index, key] of sourceKeys.entries()) {
             const text = this.readItem(key);
             if (text === null) continue;
             present = true;
@@ -1437,16 +1612,19 @@ const SaveStore = {
             } catch { damaged.push(index); }
         }
         valid.sort((a, b) => b.sequence - a.sequence || b.savedAt - a.savedAt || b.writer.localeCompare(a.writer));
-        return { latest: valid[0] || null, damaged, present, future };
+        return { latest: valid[0] || null, damaged, present, future, legacy };
     },
     init() {
+        let upgraded=false;
         const empty = defaultSaveData();
+        empty.replayGeneration='v21';
         empty.bestLevels = Array(levels.length).fill(null); empty.bestRTASplits = Array(levels.length).fill(null);
         saveData = empty; this.editor = this.emptyEditor();
         this.blocked = ''; this.needsReload = false;
         try {
             const slots = this.readSlots();
             if (slots.latest) {
+                upgraded=slots.latest.upgraded||slots.legacy;
                 saveData = slots.latest.payload.game; this.editor = slots.latest.payload.editor;
                 this.sequence = slots.latest.sequence;
                 if (slots.damaged.length) this.notice = 'Recovered the last valid save copy.';
@@ -1461,6 +1639,15 @@ const SaveStore = {
         this.base = cloneSave({ game: saveData, editor: this.editor });
         this.ready = true;
         if (this.blocked) this.status = this.blocked;
+        else if(upgraded){
+            try{if(typeof ReplayRecorder!=='undefined')localStorage.removeItem(ReplayRecorder.pendingKey);}catch{}
+            this.notice='V2.1 reset old times and recordings. Settings and editor work were kept.';
+            if(this.commit()){
+                try{for(const key of this.legacyKeys)localStorage.removeItem(key);}catch{this.notice+=' Old cache cleanup will need a retry.';}
+                const upgradeNotice = 'V2.1 reset old times and recordings. Settings and editor work were kept.';
+                setTimeout(() => { if (this.notice === upgradeNotice) this.notice = ''; }, 8000);
+            }
+        }
     },
     merge(local, remote) {
         const base = this.base || local;
@@ -1524,10 +1711,10 @@ const SaveStore = {
             const envelope = this.envelope(payload, sequence);
             const text = JSON.stringify(envelope);
             // Never overwrite the newest valid copy. A single setItem is atomic.
-            const slot = slots.latest ? 1 - slots.latest.index : 0;
+            const slot = slots.latest && !slots.legacy ? 1 - slots.latest.index : 0;
             localStorage.setItem(this.keys[slot], text);
             if (localStorage.getItem(this.keys[slot]) !== text) throw new Error('Save verification failed. Retry saving.');
-            if (!slots.latest) {
+            if (!slots.latest || slots.legacy) {
                 // Seed redundancy on the first save too. The primary is already
                 // verified; failure here must not claim that primary was lost.
                 try {
@@ -1572,7 +1759,6 @@ const SaveStore = {
     },
     backupText() {
         const payload = this.normalizePayload({ game: saveData, editor: this.editor });
-        payload.replays=ReplayLibrary.backupArchive();
         return JSON.stringify(this.envelope(payload, Math.max(1, this.sequence), 'retrograde-v2-backup'));
     },
     previewBackup(text) {
@@ -1583,13 +1769,17 @@ const SaveStore = {
             const game = backup.payload.game;
             const records = game.bestLevels.filter(validRecordTime).length;
             const levelsSaved = backup.payload.editor.library?.levels.length || 0;
-            loadStatus = `${records} records, ${levelsSaved} editor levels. Restore replaces all V2 data.`;
+            loadStatus = `${records} records, ${levelsSaved} editor levels. Restore replaces save and editor data.`;
             return true;
         } catch (error) { loadStatus = `Backup rejected: ${error.message}`; return false; }
     },
     restoreBackup() {
         if (!this.pendingRestore || this.restoring) return false;
         if(this.pendingRestore.replays?.entries.length||ReplayRecorder.jobs.size)return this.restoreCompleteBackup();
+        if(!this.pendingRestore.replays) {
+            this.pendingRestore.game.replayGeneration=saveData.replayGeneration;
+            return this.finishRestore(null);
+        }
         const generation=`restore_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
         this.pendingRestore.game.replayGeneration=generation;
         return this.finishRestore({generation,entries:[]});
@@ -1599,9 +1789,9 @@ const SaveStore = {
         const candidate=this.pendingRestore;
         try {
             while(ReplayRecorder.jobs.size)await Promise.all([...ReplayRecorder.jobs]);
-            const stage=await ReplayLibrary.stageArchive(candidate.replays,candidate.game);
+            const stage=candidate.replays?await ReplayLibrary.stageArchive(candidate.replays,candidate.game):null;
             if(candidate!==this.pendingRestore){loadStatus='Restore cancelled.';return false;}
-            candidate.game.replayGeneration=stage.generation;
+            candidate.game.replayGeneration=stage?.generation||saveData.replayGeneration;
             return this.finishRestore(stage);
         } catch(error){loadStatus=`NOT SAVED: ${error.message}`;return false;}
         finally{this.restoring=false;}
@@ -1610,7 +1800,7 @@ const SaveStore = {
         if(!this.pendingRestore)return false;
         _saveScheduled = false;
         if (!this.commit(this.pendingRestore, true)) { loadStatus = this.status; return false; }
-        ReplayLibrary.activateArchive(stage);
+        if(stage)ReplayLibrary.activateArchive(stage);
         this.pendingRestore = null;
         // Invalidate editor caches; no active draft exists on the Save/Load screen.
         LevelEditor.preferencesLoaded = false; LevelEditor.model = null; LevelEditor.draftActive = false;
@@ -1646,7 +1836,7 @@ const SaveStore = {
     },
     async downloadBackup() {
         try {
-            loadStatus='Packing complete backup, including recordings...';
+            loadStatus='Packing save backup. Recordings use separate .rgr files...';
             const bytes=await this.backupFile();
             const blob = new Blob([bytes], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob), link = document.createElement('a');
@@ -1702,6 +1892,7 @@ const PRESERVED_CAMPAIGN_RECORDS = new Set([0, 1, 2, 3, 4, 5, 34, 37]);
 
 function defaultSaveData() { return {
     campaignRevision: CAMPAIGN_LAYOUT_REVISION,
+    competitiveEpoch: V21Upgrade.epoch,
     replayGeneration: 'initial',
     recordEvidence: {},
     casualLayoutValid: true,
@@ -2059,6 +2250,7 @@ function sanitizeCampaignCheckpoint(data = saveData) {
 // Migration and normalization only touch the candidate passed to them.
 function normalizeGameSave(parsed, strict = false) {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !Array.isArray(parsed.bestLevels)) throw new Error('Invalid game save.');
+    parsed = V21Upgrade.game(parsed);
     const revision = parsed.campaignRevision ?? 1;
     if (!Number.isSafeInteger(revision) || revision < 1 || revision > CAMPAIGN_LAYOUT_REVISION) throw new Error('Unsupported campaign revision.');
     if (strict && revision === CAMPAIGN_LAYOUT_REVISION && parsed.bestLevels.length !== levels.length) throw new Error('Incomplete level records.');
@@ -9290,6 +9482,7 @@ window.addEventListener('click', e => {
 
         if (clickedBtn) {
             let id = clickedBtn.id;
+            if (id === 'feedback' || id === 'developer') { Operations.show(id); return; }
             if (id === 'account') { CloudUI.show(); return; }
             if (id === 'test_server') { CloudAccount.ping(); return; }
             if (CloudBoard.button(id) || SplitScreen.handleButton(id) || handleReplayButton(id)) return;
@@ -9454,18 +9647,21 @@ window.addEventListener('paste', e => {
     }
 });
 
-window.addEventListener('blur', () => {
-    if (ReplayPlayer.active) { ReplayPlayer.paused = true; return; }
-    ReplayRecorder.event('pause');
-    if (SplitScreen.active) SplitScreen.pause();
-    if (state !== 'menu') {
-        isPaused = true;
-    }
+function interruptGameplay() {
     keys = {};
     Simulation.clearInput();
     tHoldTimer = 0;
+    escHoldTimer = 0;
     tTriggeredReset = false;
-});
+    AudioSystem.updateEngine(0);
+    if (ReplayPlayer.active) { ReplayPlayer.paused = true; return; }
+    if (!isPaused) ReplayRecorder.event('pause');
+    if (SplitScreen.active) SplitScreen.pause();
+    else if (state !== 'menu') isPaused = true;
+}
+
+window.addEventListener('blur', interruptGameplay);
+window.addEventListener('pagehide', interruptGameplay);
 
 // Browser zoom shortcuts alter the game's apparent size.
 window.addEventListener('wheel', e => {
@@ -9498,8 +9694,9 @@ window.addEventListener('keydown', e => {
     }
 
     if (isPaused) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.repeat && !document.hidden) {
             isPaused = false;
+            lastTime = 0;
             ReplayRecorder.event('resume');
             keys = {};
             Simulation.clearInput();
@@ -10187,7 +10384,7 @@ function prepareLevelObstacles(currentLevel) {
 
     for (let i = 0; i < obstacles.length; i++) {
         let obsA = obstacles[i];
-        
+
         if (!obsA.texture && obsA.w !== undefined && obsA.h !== undefined) {
             if (isMetalLevel && (obsA.w < 128 || obsA.h < 128)) {
                 obsA.texture = 'strut';
@@ -10198,10 +10395,10 @@ function prepareLevelObstacles(currentLevel) {
         for (let j = 0; j < obstacles.length; j++) {
             if (i === j) continue;
             let obsB = obstacles[j];
-            
+
             let overlapX = !(obsA.aabb.maxX < obsB.aabb.minX || obsA.aabb.minX > obsB.aabb.maxX);
             let overlapY = !(obsA.aabb.maxY < obsB.aabb.minY || obsA.aabb.minY > obsB.aabb.maxY);
-            
+
             if (overlapX && overlapY) {
                 isIsolated = false;
                 break;
@@ -10381,6 +10578,7 @@ function stepFlightSession(session, actions, dt) {
     const { player, level: currentLevel, obstacles, zones: activeZones, items: activeItems, grid: SpatialGrid } = session;
     const { gravity: GRAVITY, thrust: THRUST, rotation: ROTATION_SPEED } = session.physics;
     let outcome = null;
+    let zoneAx = 0, zoneAy = 0;
     session.empActive = false; // Reset EMP status every frame
 
     if (player.portalCooldown > 0) {
@@ -10468,6 +10666,8 @@ function stepFlightSession(session, actions, dt) {
                     }
                 } else {
                     // Default wind/gravity logic
+                    zoneAx += zone.forceX || 0;
+                    zoneAy += zone.forceY || 0;
                     player.vx += (zone.forceX || 0) * dt;
                     player.vy += (zone.forceY || 0) * dt;
                 }
@@ -10479,6 +10679,10 @@ function stepFlightSession(session, actions, dt) {
         }
     }
 
+    const initialAngle = player.angle;
+    const initialVx = player.vx, initialVy = player.vy;
+    let thrustDuration = 0;
+
     // Rotation is preserved even in EMP
     if (actions.left) { player.angle -= ROTATION_SPEED * dt; }
     if (actions.right) { player.angle += ROTATION_SPEED * dt; }
@@ -10486,6 +10690,7 @@ function stepFlightSession(session, actions, dt) {
     // Main Thruster is disabled inside an EMP AND when out of fuel
     if (actions.thrust) {
         if (!session.empActive && player.fuel > 0) {
+            thrustDuration = session.variableDt ? Math.min(dt, player.fuel * 60 / 25) : dt;
             player.vx += Math.sin(player.angle) * THRUST * dt;
             player.vy -= Math.cos(player.angle) * THRUST * dt;
 
@@ -10514,8 +10719,32 @@ function stepFlightSession(session, actions, dt) {
         player.vy += GRAVITY * dt;
     }
 
-    player.x += player.vx * dt;
-    player.y += player.vy * dt;
+    if (session.variableDt) {
+        // Integrate rotating thrust and constant gravity over elapsed time.
+        // This avoids adding a frame-dependent extra half-step of acceleration.
+        const omega = ((actions.right ? 1 : 0) - (actions.left ? 1 : 0)) * ROTATION_SPEED;
+        const t = thrustDuration, a = initialAngle, end = a + omega * t;
+        let dvx = 0, dvy = 0, dx = 0, dy = 0;
+        if (Math.abs(omega * t) > 1e-4) {
+            dvx = THRUST * (Math.cos(a) - Math.cos(end)) / omega;
+            dvy = -THRUST * (Math.sin(end) - Math.sin(a)) / omega;
+            dx = THRUST * (t * Math.cos(a) / omega - (Math.sin(end) - Math.sin(a)) / (omega * omega));
+            dy = THRUST * (t * Math.sin(a) / omega + (Math.cos(end) - Math.cos(a)) / (omega * omega));
+        } else {
+            const mid = a + omega * t / 2;
+            dvx = THRUST * Math.sin(mid) * t;
+            dvy = -THRUST * Math.cos(mid) * t;
+            dx = dvx * t / 2; dy = dvy * t / 2;
+        }
+        const gravity = currentLevel.zeroGravity ? 0 : GRAVITY;
+        player.vx = initialVx + dvx;
+        player.vy = initialVy + dvy + gravity * dt;
+        player.x += initialVx * dt + dx + dvx * (dt - t) - zoneAx * dt * dt / 2;
+        player.y += initialVy * dt + dy + dvy * (dt - t) + (gravity - zoneAy) * dt * dt / 2;
+    } else {
+        player.x += player.vx * dt;
+        player.y += player.vy * dt;
+    }
 
     const shipRadius = 12;
 
@@ -10821,7 +11050,6 @@ function update(dt) {
     if (SplitScreen.active) { SplitScreen.update(dt); return; }
     if (ReplayRecorder.restoring) return;
     if (isPaused) return;
-    RunTiming.tick(dt);
     if (deltaDisplayTimer > 0) deltaDisplayTimer -= dt / 60;
 
     if (transitionAlpha > 0) {
@@ -10968,6 +11196,9 @@ function update(dt) {
             }
         }
 
+        // Count only updates that reach the flight/retry path. Holding Escape
+        // can return to the menu above without producing a physics sample.
+        RunTiming.tick(dt);
         if (state === 'won' || state === 'victory') {
             player.vx = 0;
             player.vy = 0;
@@ -10986,6 +11217,7 @@ function update(dt) {
 
 function updateSoloFlight(dt) {
     const session = {
+        variableDt: Simulation.stepping && Simulation.variableDt,
         level: currentLevel, player, obstacles, zones: activeZones, items: activeItems,
         grid: SpatialGrid, particles, particleIndex, state, timer, timerRunning,
         clock: soloFlightClock, phaseTime: flightPhaseTime,
@@ -10996,13 +11228,16 @@ function updateSoloFlight(dt) {
         left: keys.a || keys.arrowleft, right: keys.d || keys.arrowright,
         thrust: keys.w || keys.arrowup
     };
-    if ((actions.left || actions.right || actions.thrust) && !hasMoved && currentLevelIndex === 0 && !isPracticeMode && !currentLevel.isTutorial && runState === 'inactive') {
+    if ((actions.left || actions.right || actions.thrust) && currentLevelIndex === 0 && !isPracticeMode && !currentLevel.isTutorial && runState === 'inactive') {
         runState = 'active';
         RunTiming.reset();
         RunTiming.tick(dt);
     }
     ReplayRecorder.before(session, dt);
     const outcome = stepFlightSession(session, actions, dt);
+    if (session.variableDt && session.hasMoved && currentLevelIndex===0 && !isPracticeMode && !currentLevel.isTutorial && runState==='inactive') {
+        runState='active';RunTiming.reset();RunTiming.tick(dt);
+    }
     ReplayRecorder.after(session, actions, dt);
     ({ state, timer, timerRunning, hasMoved, empActive, thrusterFlicker,
         exhaustTimer, screenShake, particleIndex } = session);
@@ -11121,7 +11356,9 @@ function finishSoloLanding() {
                     victoryData.newIGT = false;
                 }
 
-                if (!victoryData.invalid || customFinalLevel!==null) ReplayRecorder.completeRun();
+                // Record eligibility controls records, not whether the player's
+                // completed flight history is retained at all.
+                ReplayRecorder.completeRun(victoryData.invalid ? 'Run is ineligible for records.' : '');
                 runState = 'inactive';
             }
         }
@@ -11466,6 +11703,7 @@ function drawMenuUI() {
     }
     if (menuScreen === 'main') {
         drawMenuFrame('RETROGRADE');
+        Operations.drawMenuNotice();
         const noContinue = isSpeedrunMode || saveData.campaignProgress === 0;
         drawMenuHeading(isSpeedrunMode ? 'PLAY / SPEEDRUN' : 'PLAY', 260, 195);
         drawMenuHeading('TOOLS', 700, 195);
@@ -11481,7 +11719,9 @@ function drawMenuUI() {
         drawUIButton('appearance', 'APPEARANCE', 700, 484, 320, 52);
         drawUIButton('account', CloudAccount.session ? `ACCOUNT - ${CloudAccount.stateLabel()}` : 'LOG IN / GUEST', 260, 550, 320, 52);
         drawUIButton('leaderboards', 'LEADERBOARDS', 700, 550, 320, 52);
-        drawMenuFooter(null, CloudAccount.session ? CloudAccount.session.username : 'GUEST / V2');
+        drawUIButton('feedback','FEEDBACK',260,640,180,34);
+        if(typeof Operations!=='undefined'&&Operations.status?.developer)drawUIButton('developer',`DEVELOPER (${Operations.status.unread||0})`,460,640,180,34);
+        drawMenuFooter(null, `${CloudAccount.session ? CloudAccount.session.username : 'GUEST'} / v2.1.0`);
     } else if (menuScreen === 'practice') {
         drawMenuFrame('PRACTICE');
         const pages = Math.max(1, Math.ceil(levels.length / 10));
@@ -11535,7 +11775,9 @@ function drawMenuUI() {
                 ctx.fillText('START NEW RUN FOR RECORDS', 760, 510);
             }
         } else ctx.fillText('NO SAVED CHECKPOINT', 760, 444);
-        if(saveData.bestRTA&&!ReplayLibrary.campaignEntry('rta')){ctx.font='11px monospace';ctx.fillStyle='#ffbf80';ctx.textAlign='left';ctx.fillText('No full recording for this time.',760,534);}
+        if(saveData.bestRTA&&!ReplayLibrary.campaignEntry('rta')){ctx.font='11px monospace';ctx.fillStyle='#ffbf80';ctx.textAlign='left';
+            const reason=ReplayRecorder.jobs.size?'Checking full recording...':ReplayRecorder.status||ReplayLibrary.status||'No full recording for this time.';
+            ctx.fillText(fitMenuText(reason,320),760,534);}
         ctx.font = '12px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#91a3b3';
         ctx.fillText('RTA: retries count; pauses and clear waits do not.', 720, 550);
         drawUIButton('replays','REPLAYS / GHOSTS',760,568,300,40);
@@ -11562,17 +11804,17 @@ function drawMenuUI() {
         drawMenuFooter('back_settings', CloudAccount.pingStatus || 'ESC BACK');
     } else if (menuScreen === 'saveload') {
         drawMenuFrame('BACKUP / RESTORE');
-        drawMenuHeading('ONE FILE / EVERYTHING INCLUDED',220,205);
+        drawMenuHeading('SAVE BACKUP / SEPARATE REPLAYS',220,205);
         ctx.font='16px monospace';ctx.textAlign='left';ctx.fillStyle='#a9bbc7';
-        ctx.fillText('Progress, times, settings, cosmetics, editor work, and recordings.',220,245);
-        ctx.fillText('Recordings are checked when you restore a backup.',220,277);
-        drawUIButton('download_backup','BACK UP EVERYTHING',220,325,390,52,'primary');
+        ctx.fillText('Progress, times, settings, cosmetics, and editor work.',220,245);
+        ctx.fillText('Export recordings separately as .rgr files from Replays.',220,277);
+        drawUIButton('download_backup','BACK UP SAVE',220,325,390,52,'primary');
         drawUIButton('restore_backup','RESTORE BACKUP',650,325,390,52);
         const failed=SaveStore.blocked||SaveStore.status.startsWith('NOT SAVED');
         if(failed){
             drawUIButton('retry_save','TRY SAVING AGAIN',220,420,390,48);
             ctx.font='14px monospace';ctx.textAlign='left';ctx.fillStyle='#ffbf80';
-            ctx.fillText('Device saving failed. Retry, or back up everything before closing.',220,500);
+            ctx.fillText('Device saving failed. Retry, or back up your save before closing.',220,500);
         }else{
             ctx.font='14px monospace';ctx.textAlign='left';ctx.fillStyle='#91a3b3';
             ctx.fillText('Progress saves automatically on this device.',220,445);
@@ -11589,10 +11831,10 @@ function drawMenuUI() {
             drawMenuValue('EDITOR LEVELS', String(backup.editor.library?.levels.length || 0), 240, 1020, 350);
             drawMenuValue('RECORDINGS INCLUDED',String(backup.replays?.entries.length||0),240,1020,390);
             ctx.textAlign = 'left'; ctx.font = '14px monospace'; ctx.fillStyle = '#ffbf80';
-            ctx.fillText('Restores saves, editor work, ghosts, and replays together.', 240, 435);
-            ctx.fillText('Included recordings are checked before anything is replaced.', 240, 463);
+            ctx.fillText(backup.replays?'This older backup also includes recordings.':'Restores saves and editor work. Local recordings stay on this device.', 240, 435);
+            ctx.fillText(backup.replays?'Included recordings are checked before anything is replaced.':'Use separate .rgr files to transfer recordings.', 240, 463);
             activeUIButtons = [];
-            drawUIButton('confirm_restore', SaveStore.restoring?'CHECKING RECORDINGS...':'RESTORE EVERYTHING', 240, 500, 360, 48, 'primary',Boolean(SaveStore.restoring));
+            drawUIButton('confirm_restore', SaveStore.restoring?'CHECKING RECORDINGS...':'RESTORE SAVE', 240, 500, 360, 48, 'primary',Boolean(SaveStore.restoring));
             drawUIButton('cancel_restore', 'CANCEL', 640, 500, 200, 48, 'normal',Boolean(SaveStore.restoring));
             if (loadStatus.startsWith('NOT SAVED')) { ctx.fillStyle = '#ff7373'; ctx.fillText(fitMenuText(loadStatus, 780), 240, 570); }
         }
@@ -11667,7 +11909,7 @@ function drawAppearanceMenu() {
 function draw() {
     if (SplitScreen.active) { SplitScreen.draw(); drawSaveNotice(); return; }
     drawGameScene(ctx, { width: GAME_WIDTH, height: GAME_HEIGHT }, Simulation.scene({
-        level: currentLevel, camera, obstacles, zones: activeZones, items: activeItems,
+        level: currentLevel, camera, obstacles, phaseTime: flightPhaseTime, zones: activeZones, items: activeItems,
         parallax: parallaxLayers, dust: ambientDust, particles, player, state, timer,
         thrusterFlicker, menuShip,
         ghost: state === 'playing' ? ReplayRecorder.ghostPose() : null
@@ -11685,11 +11927,54 @@ function drawSaveNotice() {
     ctx.restore();
 }
 
+// Physics uses the start of each substep. Tiny final substeps make that timestamp
+// jump unevenly between rendered frames. Draw at the elapsed scene clock instead.
+const obstacleRenderCache = new WeakMap();
+function renderFlightObstacles(source, time) {
+    if (!Number.isFinite(time)) return source;
+    let cached = obstacleRenderCache.get(source);
+    if (!cached) {
+        cached = { time: NaN, rows: source.map(obs => obs.isMoving || obs.isRotating ?
+            { ...obs, vertices: obs.vertices.map(v => ({ ...v })), aabb: { ...obs.aabb } } : obs) };
+        obstacleRenderCache.set(source, cached);
+    }
+    if (cached.time === time) return cached.rows;
+    cached.time = time;
+    for (let i = 0; i < source.length; i++) {
+        const obs = source[i], view = cached.rows[i];
+        if (obs.isMoving) {
+            const phase = (1 - Math.cos(time * obs.speed)) / 2;
+            const x = obs.startX + (obs.endX - obs.startX) * phase;
+            const y = obs.startY + (obs.endY - obs.startY) * phase;
+            for (let n = 0; n < 4; n++) {
+                view.vertices[n].x = x + (n === 1 || n === 2 ? obs.w : 0);
+                view.vertices[n].y = y + (n >= 2 ? obs.h : 0);
+            }
+        } else if (obs.isRotating) {
+            view.currentAngle = time * obs.speed + (obs.initialAngle || 0);
+            const cos = Math.cos(view.currentAngle), sin = Math.sin(view.currentAngle);
+            for (let n = 0; n < obs.baseVertices.length; n++) {
+                const v = obs.baseVertices[n];
+                view.vertices[n].x = obs.cx + v.x * cos - v.y * sin;
+                view.vertices[n].y = obs.cy + v.x * sin + v.y * cos;
+            }
+        } else continue;
+        const box = view.aabb;
+        box.minX = box.minY = Infinity; box.maxX = box.maxY = -Infinity;
+        for (const v of view.vertices) {
+            box.minX = Math.min(box.minX, v.x); box.maxX = Math.max(box.maxX, v.x);
+            box.minY = Math.min(box.minY, v.y); box.maxY = Math.max(box.maxY, v.y);
+        }
+    }
+    return cached.rows;
+}
+
 // Both gameplay and the editor use this renderer; editing adds only guides on top.
 function drawGameScene(ctx, canvas, scene) {
-    const { level: currentLevel, camera, obstacles, zones: activeZones, items: activeItems,
+    const { level: currentLevel, camera, zones: activeZones, items: activeItems,
         parallax: parallaxLayers, dust: ambientDust, particles, player, state, timer,
         thrusterFlicker = 0, menuShip = { active: false } } = scene;
+    const obstacles = renderFlightObstacles(scene.obstacles, scene.phaseTime);
     if (scene.background !== false) drawGameBackdrop(ctx, canvas, currentLevel, parallaxLayers, camera);
 
     ctx.save();
@@ -13842,7 +14127,7 @@ const SplitScreen = {
             return true;
         }
         if (code === 'Escape') {
-            if (isPaused) { isPaused = false; this.clearInput(); }
+            if (isPaused && !document.hidden) { isPaused = false; lastTime = 0; this.clearInput(); }
             else this.pause();
             return true;
         }
@@ -13873,7 +14158,7 @@ const SplitScreen = {
         match.clock += dt / 60;
         match.totalTime += dt / 60;
         // Resolve both flights before scoring, so update order cannot win a tie.
-        const outcomes = match.sessions.map((session, index) => stepFlightSession(session, this.actions(index), dt));
+        const outcomes = match.sessions.map((session, index) => stepFlightSession(Object.assign(session, { variableDt: Simulation.stepping && Simulation.variableDt }), this.actions(index), dt));
         for (const session of match.sessions) {
             updateCamera(session, dt);
             updateFlightEffects(session, dt);
@@ -14024,7 +14309,7 @@ const SplitScreen = {
                 level: session.level, camera: session.camera, obstacles: session.obstacles,
                 zones: session.zones, items: session.items, parallax: session.parallax,
                 dust: session.dust, particles: session.particles, player: session.player,
-                state: session.state, timer: session.timer, thrusterFlicker: session.thrusterFlicker,
+                state: session.state, timer: session.timer, phaseTime: session.phaseTime, thrusterFlicker: session.thrusterFlicker,
                 worldOnly: true
             }));
             ctx.restore();
@@ -14133,9 +14418,11 @@ document.addEventListener?.('visibilitychange', () => { if (document.hidden) Spl
 
     </script>
     <script>
-// Physics always advances in 1/120-second steps. Rendering only reads snapshots.
+// Live gameplay follows elapsed frame time, subdividing only for collision safety.
+// Legacy snapshot helpers remain available to replay rendering.
 const Simulation = {
-    hz: 120,
+    hz: 60,
+    variableDt: true,
     accumulator: 0,
     time: null,
     alpha: 1,
@@ -14152,6 +14439,7 @@ const Simulation = {
         if (!['KeyA', 'KeyD', 'KeyW', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(code)) return;
         const time = Number.isFinite(event.timeStamp) ? event.timeStamp : lastTime;
         this.pending.push({ code, down, time });
+        this.pending.sort((a, b) => a.time - b.time);
     },
     clearInput() {
         this.input.clear();
@@ -14196,24 +14484,26 @@ const Simulation = {
         return [{ player, camera, menuShip, dust: ambientDust, particles, obstacles, state }];
     },
     advance(deltaTime, timestamp) {
-        if (this.time === null) this.time = timestamp - deltaTime;
-        this.accumulator += deltaTime;
+        if (!Number.isFinite(deltaTime) || deltaTime <= 0) return;
+        this.time = timestamp - deltaTime;
+        const end = timestamp;
         const step = 1000 / this.hz;
-        while (this.accumulator + 1e-7 >= step) {
-            this.time += step;
+        this.alpha = 1;
+        while (this.time < end - 1e-7) {
             while (this.pending.length && this.pending[0].time <= this.time + 1e-7) {
                 const event = this.pending.shift();
                 if (event.down) this.input.add(event.code); else this.input.delete(event.code);
             }
-            for (const scene of this.scenes()) this.snapshot(scene);
+            const next = Math.min(end, this.time + step, this.pending[0]?.time ?? Infinity);
+            const dt = (next - this.time) * 60 / 1000;
+            this.time = next;
             this.stepping = true;
-            try {
-                update(60 / this.hz);
-            } finally { this.stepping = false; }
-            this.accumulator = Math.max(0, this.accumulator - step);
+            try { update(dt); } finally { this.stepping = false; }
+            if (isPaused) break;
         }
-        this.alpha = this.accumulator / step;
+        this.accumulator = 0;
     },
+
     entity(entity, state) {
         const frame = this.frames.get(entity);
         if (!frame || this.alpha >= 1 || (state !== undefined && frame.state !== state)) return entity;
@@ -14252,7 +14542,7 @@ const Simulation = {
 
     </script>
     <script>
-// Run clocks count simulation ticks, never rendered frames. Legacy seconds remain
+// Run clocks accumulate elapsed dt in 120 Hz units without rounding. Legacy seconds remain
 // an unchanged base when a checkpoint resumes. The game's RTA excludes pauses.
 const RunTiming = {
     hz: 120,
@@ -14276,8 +14566,8 @@ const RunTiming = {
     tick(dt) {
         if (runState === 'active' && !isPracticeMode && !currentLevel?.isTutorial && !currentLevel?.isCustom &&
             !['menu', 'won', 'victory', 'editor'].includes(state) && !isPaused && !document.hidden) {
-            ReplayRecorder.runTick();
-            currentRunRTA = this.add(this.rta, currentRunRTA, Math.round(dt * 2));
+            ReplayRecorder.runTick(dt);
+            currentRunRTA = this.add(this.rta, currentRunRTA, dt * 2);
         }
     },
     complete(index, time) {
@@ -14306,8 +14596,13 @@ const RunTiming = {
 
 function tickFlightClock(session, dt) {
     const clock = session.clock || (session.clock = { base: 0, ticks: 0, last: 0 });
-    session.timer = RunTiming.add(clock, session.timer, Math.round(dt * 2));
+    session.timer = RunTiming.add(clock, session.timer, dt * 2);
 }
+
+    </script>
+    <script>
+// Generated from owning physics by the build. Do not edit.
+const REPLAY_ENGINE_FINGERPRINT="f1ea6e85";
 
     </script>
     <script>
@@ -14316,11 +14611,16 @@ function tickFlightClock(session, dt) {
 // are evidence to check, never authoritative input to the physics verifier.
 const ReplayFormat = {
     hz: 120, stride: 13, maxFrames: 432000, maxBytes: 16 * 1024 * 1024,
-    rules: 'v2-ticks-1',
+    rules: 'v2-dt-1',
+    gameVersion: '2.1.0',
+    strideFor(header) { return header.version === 2 ? 21 : 13; },
+    ticksEqual(a,b) { return Math.abs(a-b) <= 1e-7; },
     physics: 'v2-flight-1',
     engine: '',
-    init() {
-        this.engine = saveChecksum({ version: 1, hz: this.hz,
+    init() { this.engine = REPLAY_ENGINE_FINGERPRINT; },
+    // Called by the build only: deployment transpilers can change toString().
+    sourceEngine() {
+        return saveChecksum({ version: 1, hz: this.hz,
             functions: [stepFlightSession, createFlightSession, prepareLevelObstacles, flightSpawnY,
                 getFacingAngle, testCirclePolygon, getOverlap, getNormalizedAngle, tickFlightClock,
                 RunTiming.add, createSpatialGrid].map(fn => fn.toString()),
@@ -14335,8 +14635,9 @@ const ReplayFormat = {
     courseDigest(source) { return this.textDigest(canonicalCourseLayout(source)); },
     compatibility(replay) {
         const h=replay.header;
+        if(h.version===2&&(h.gameVersion!==this.gameVersion||h.engine!==this.engine||h.rules!==this.rules||h.physics!==this.physics))return 'Unsupported originating game version';
         if(h.physics!==undefined&&h.physics!==this.physics)return 'Unsupported physics version';
-        if(h.rules!==undefined&&h.rules!==this.rules)return 'Unsupported replay timing rules';
+        if(h.rules!==undefined&&![this.rules,'v2-ticks-1'].includes(h.rules))return 'Unsupported replay timing rules';
         if(h.segments.some(s=>!this.source(s.level)||s.course!==this.course(this.source(s.level))||
             (s.courseDigest!==undefined&&s.courseDigest!==this.courseDigest(this.source(s.level)))))return 'Course has changed';
         return '';
@@ -14387,11 +14688,12 @@ const ReplayFormat = {
         const text = JSON.stringify(header);
         // Metadata is ASCII only (course hashes, tick counts, fixed event names).
         const headerBytes = Uint8Array.from(text, character => character.charCodeAt(0));
-        if (headerBytes.length > 262144 || samples.length % this.stride) throw Error('Invalid replay size.');
+        const stride=this.strideFor(header);
+        if (headerBytes.length > 262144 || samples.length % stride) throw Error('Invalid replay size.');
         const bytes = new Uint8Array(12 + headerBytes.length + samples.length + 4);
-        bytes.set([82,71,82,49]);
+        bytes.set([82,71,82,header.version===2?50:49]);
         const view = new DataView(bytes.buffer);
-        view.setUint32(4, headerBytes.length, true); view.setUint32(8, samples.length / this.stride, true);
+        view.setUint32(4, headerBytes.length, true); view.setUint32(8, samples.length / stride, true);
         bytes.set(headerBytes, 12); bytes.set(samples, 12 + headerBytes.length);
         if (bytes.length > this.maxBytes) throw Error('Replay exceeds the 16 MB limit.');
         view.setUint32(bytes.length - 4, this.checksum(bytes.subarray(0, -4)), true);
@@ -14399,50 +14701,67 @@ const ReplayFormat = {
     },
     decode(value) {
         const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
-        if (bytes.byteLength < 16 || bytes.byteLength > this.maxBytes || [82,71,82,49].some((n, i) => bytes[i] !== n)) throw Error('Unsupported replay file.');
+        if (bytes.byteLength < 16 || bytes.byteLength > this.maxBytes || ([82,71,82].some((n, i) => bytes[i] !== n) || ![49,50].includes(bytes[3]))) throw Error('Unsupported replay file.');
         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         const length = view.getUint32(4, true), frames = view.getUint32(8, true);
-        if (length > 262144 || frames < 1 || frames > this.maxFrames || 16 + length + frames * this.stride !== bytes.length ||
+        if (length > 262144 || frames < 1 || frames > this.maxFrames || 16 + length + frames * (bytes[3]===50?21:13) !== bytes.length ||
             view.getUint32(bytes.length - 4, true) !== this.checksum(bytes.subarray(0, -4))) throw Error('Replay is damaged or truncated.');
         let text = '';
         for (const byte of bytes.subarray(12, 12 + length)) { if (byte > 127) throw Error('Invalid replay header.'); text += String.fromCharCode(byte); }
         const header = JSON.parse(text);
-        if (header?.version !== 1 || header.saveEpoch !== 1 || header.hz !== this.hz || !/^[0-9a-f]{8}$/.test(header.engine) ||
+        if (![1,2].includes(header?.version) || (header.version===2 && (bytes[3]!==50 || typeof header.gameVersion!=='string' || !/^\d+\.\d+\.\d+$/.test(header.gameVersion))) || (header.version===1&&bytes[3]!==49) || header.saveEpoch !== 1 || header.hz !== this.hz || !/^[0-9a-f]{8}$/.test(header.engine) ||
             !['flight', 'campaign', 'checkpoint', 'test'].includes(header.kind) || !Array.isArray(header.segments) ||
             !header.segments.length || header.segments.length > 2048 || !Number.isFinite(header.createdAt)) throw Error('Replay requires a different game version.');
-        let total = 0;
+                let total = 0;
         const integer = n => Number.isSafeInteger(n) && n >= 0 && n <= this.maxFrames * 6;
+        const duration = n => Number.isFinite(n) && n>=0 && n<=this.maxFrames*6;
         for (const segment of header.segments) {
             if (!segment || !Number.isInteger(segment.level) || segment.level < -1 || segment.level >= 50 ||
                 typeof segment.course !== 'string' || !/^[a-f0-9]{8}$/.test(segment.course)) throw Error('Invalid replay course.');
-            if (!integer(segment.frames) || !segment.frames || !integer(segment.timeTicks) || !integer(segment.launchTick) ||
-                !integer(segment.waitTicks) || !['won', 'lost', 'restart', 'exit'].includes(segment.result) ||
+            if (!integer(segment.frames) || !segment.frames || !duration(segment.timeTicks) || !integer(segment.launchTick) ||
+                !duration(segment.waitTicks) || !['won', 'lost', 'restart', 'exit'].includes(segment.result) ||
                 !Array.isArray(segment.events) || segment.events.length > 2048 || segment.events.some(event => !event ||
                     !integer(event.tick) || event.tick > segment.frames || !['pause', 'resume'].includes(event.type))) throw Error('Invalid replay events.');
             total += segment.frames;
-            if(header.rules === this.rules){
+            if([this.rules,'v2-ticks-1'].includes(header.rules)){
                 if(!Array.isArray(segment.retryInputs)||segment.retryInputs.length>2048)throw Error('Missing retry timeline.');
                 let waits=0;
                 for(const run of segment.retryInputs){
-                    if(!Array.isArray(run)||run.length!==2||!Number.isInteger(run[0])||run[0]<0||run[0]>7||!integer(run[1])||run[1]<1)throw Error('Invalid retry timeline.');
+                    if(!Array.isArray(run)||run.length!==2||!Number.isInteger(run[0])||run[0]<0||run[0]>7||!duration(run[1])||run[1]<=0)throw Error('Invalid retry timeline.');
                     waits+=run[1];
                 }
-                if(waits!==segment.waitTicks)throw Error('Retry timeline does not match elapsed ticks.');
+                if(!this.ticksEqual(waits,segment.waitTicks))throw Error('Retry timeline does not match elapsed ticks.');
             }
         }
         if (total !== frames || (header.kind === 'flight' && header.segments.length !== 1) ||
-            !integer(header.rtaTicks) || !integer(header.igtTicks) || typeof header.clean !== 'boolean') throw Error('Invalid replay timeline.');
-        return { header, bytes, samples: new DataView(bytes.buffer, bytes.byteOffset + 12 + length, frames * this.stride), frames };
+            !duration(header.rtaTicks) || !duration(header.igtTicks) || typeof header.clean !== 'boolean') throw Error('Invalid replay timeline.');
+        return { header, bytes, stride:this.strideFor(header), samples: new DataView(bytes.buffer, bytes.byteOffset + 12 + length, frames * this.strideFor(header)), frames };
     },
     pose(replay, tick) {
         if (!Number.isInteger(tick) || tick < 0 || tick >= replay.frames) return null;
-        const offset = tick * this.stride, data = replay.samples;
-        return { flags: data.getUint8(offset), x: data.getFloat32(offset + 1, true), y: data.getFloat32(offset + 5, true), angle: data.getFloat32(offset + 9, true) };
+        const offset = tick * replay.stride, data = replay.samples;
+        return { flags: data.getUint8(offset), x: data.getFloat32(offset + 1, true), y: data.getFloat32(offset + 5, true), angle: data.getFloat32(offset + 9, true), dt: replay.header.version===2?data.getFloat64(offset+13,true):0.5 };
+    },
+    timeline(replay) {
+        if(!replay.ends){
+            replay.ends=new Float64Array(replay.frames);let elapsed=0;
+            for(let i=0;i<replay.frames;i++){elapsed+=this.pose(replay,i).dt*2;replay.ends[i]=elapsed;}
+        }
+        return replay.ends;
+    },
+    frameAt(replay,offset,count,ticks) {
+        const ends=this.timeline(replay),base=offset?ends[offset-1]:0,target=base+ticks;
+        let low=offset,high=offset+count;
+        while(low<high){const mid=(low+high)>>>1;if(ends[mid]<target)low=mid+1;else high=mid;}
+        if(low>=offset+count)return offset+count;
+        if(low===offset)return offset;
+        const prior=ends[low-1];return low-1+(target-prior)/(ends[low]-prior);
     },
     session(replay, segment) {
         const session = createFlightSession(this.source(segment.level), { width: GAME_WIDTH, height: GAME_HEIGHT }, { headless: true });
         // This released recorder started its clock on input, including airborne spawns.
         // Keep its timing rule for playback and verification without altering new runs.
+        session.variableDt = replay.header.version===2;
         session.legacyReplayTiming = replay.header.rules === undefined && replay.header.engine === '7ad6e360';
         return session;
     },
@@ -14454,27 +14773,30 @@ const ReplayFormat = {
         let offset = 0, igt = 0, rta = 0, expectedLevel = 0, runStarted = false;
         for (const segment of header.segments) {
             const session = this.session(replay, segment);
-            let launchTick = 0;
+            let launchTick = 0, durationTicks = 0;
             for (let tick = 0; tick < segment.frames; tick++) {
                 if (session.state !== 'playing') throw Error('Replay continues flying after the attempt ended.');
                 const pose = this.pose(replay, offset + tick), mask = pose.flags;
                 if ((mask & 128) || (mask & 48) === 48 || ![pose.x,pose.y,pose.angle].every(Number.isFinite)) throw Error('Invalid replay sample.');
                 const epoch = session.player.renderEpoch || 0;
-                stepFlightSession(session, this.actions(mask), 0.5);
+                if(!Number.isFinite(pose.dt)||pose.dt<=0||pose.dt>1+1e-7)throw Error('Invalid replay duration.');
+                durationTicks += pose.dt*2;
+                stepFlightSession(session, this.actions(mask), pose.dt);
                 if (!session.hasMoved) launchTick = tick + 1;
                 if (this.flags(session, this.actions(mask), epoch) !== mask ||
                     Math.abs(session.player.x - pose.x) > Math.max(0.002, Math.abs(pose.x) * 2e-7) ||
                     Math.abs(session.player.y - pose.y) > Math.max(0.002, Math.abs(pose.y) * 2e-7) ||
                     Math.abs(getNormalizedAngle({ angle: getNormalizedAngle(session.player) - pose.angle })) > 0.000002) throw Error(`Flight diverged at tick ${offset + tick + 1}.`);
                 if (header.kind !== 'flight') {
-                    if (mask & 7) runStarted = true;
-                    if (runStarted) rta++;
+                    if ((mask & 7) || (header.version===2 && !(mask & 64))) runStarted = true;
+                    if (runStarted) rta+=pose.dt*2;
                 }
                 yield { session, tick: offset + tick + 1 };
             }
-            if (session.clock.ticks !== segment.timeTicks || session.clock.base !== 0 || launchTick !== segment.launchTick) throw Error('Replay time does not match its controls.');
+            if (!this.ticksEqual(session.clock.ticks,segment.timeTicks) || session.clock.base !== 0 || launchTick !== segment.launchTick) throw Error('Replay time does not match its controls.');
+            if(header.version===2&&!this.ticksEqual(durationTicks,segment.durationTicks))throw Error('Replay duration does not match its controls.');
             const outcome = session.state;
-            if (outcome === 'won' && segment.timeTicks < 1) throw Error('A level clear needs active timing.');
+            if (outcome === 'won' && segment.timeTicks <= 0) throw Error('A level clear needs active timing.');
             if (header.kind !== 'flight' && segment.level === 0 && outcome !== 'won') throw Error('A level-one restart begins a new run.');
             if ((segment.result === 'won' || segment.result === 'lost') ? outcome !== segment.result : outcome !== 'playing') throw Error('Replay outcome does not match its controls.');
             if (segment.waitTicks && segment.result !== 'lost') throw Error('Invalid retry waiting time.');
@@ -14482,14 +14804,15 @@ const ReplayFormat = {
                 if (!runStarted || segment.level !== expectedLevel) throw Error('Campaign replay skips or reorders levels.');
                 if (outcome === 'won') { igt += segment.timeTicks; expectedLevel++; }
                 rta += segment.waitTicks;
-            } else { igt = segment.timeTicks; rta = segment.frames + segment.waitTicks; }
+            } else { igt = segment.timeTicks; rta = durationTicks + segment.waitTicks; }
             offset += segment.frames;
         }
         if(header.kind==='test'&&(!Number.isInteger(header.finalLevel)||header.finalLevel<0||header.finalLevel>=levels.length||expectedLevel!==header.finalLevel+1||header.segments.at(-1).result!=='won'))throw Error('Invalid test-run finish.');
         if (header.kind === 'campaign' && expectedLevel !== levels.length) throw Error('Campaign replay is incomplete.');
         if(header.kind==='checkpoint'&&(expectedLevel<1||expectedLevel>=levels.length))throw Error('Invalid campaign recording checkpoint.');
-        if (rta !== header.rtaTicks || igt !== header.igtTicks || igt < 1) throw Error('Replay totals were changed.');
+        if (!this.ticksEqual(rta,header.rtaTicks) || !this.ticksEqual(igt,header.igtTicks) || igt <= 0) throw Error('Replay totals were changed.');
         return { rta: rta / this.hz, igt: igt / this.hz, rtaTicks: rta, igtTicks: igt,
+            gameVersion: header.version===2?header.gameVersion:'2.0.0',
             rules: header.rules || (header.engine==='7ad6e360'?'legacy-input-1':this.rules), physics: header.physics || this.physics,
             courseDigest: this.textDigest(canonicalSave(header.segments.map(s=>this.courseDigest(this.source(s.level))))),
             completed: header.kind === 'campaign' || (header.kind==='flight'&&header.segments[0].result === 'won') };
@@ -14530,7 +14853,7 @@ const RecordEvidence = {
         return proof&&canonicalSave(proof)===canonicalSave(this.descriptor(checked,value));
     },
     bind(entry,game=saveData,replace=false) {
-        if(!entry.checked||entry.key.startsWith('import:'))return false;
+        if(!entry.checked||!V21Upgrade.eligibleReplay(entry.replay.header)||entry.key.startsWith('import:'))return false;
         game.recordEvidence ||= {};
         let changed=false;
         for(const [record,value] of this.records(entry.checked)){
@@ -14549,11 +14872,16 @@ const ReplayRecorder = {
     current: null, campaign: null, ghost: null, jobs: new Set(), status: '', lastCreated: 0,
     restoring: null, resumeRequest: 0,
     pendingKey: 'retrograde_v2_fresh1_pending_run',
+    onlineNow() { return navigator.onLine !== false && (typeof Operations === 'undefined' || !Operations.networkOffline); },
+    markOffline() {
+        if(this.campaign)this.campaign.onlineEligible=false;
+        if(this.current&&!this.current.closed)this.current.onlineEligible=false;
+    },
     resetRun(nextLevel, rta, igt) {
         this.resumeRequest++;this.restoring=null;
         // Starting the clock on level one's first input retains its spawn history.
         if (runState !== 'active') this.close('exit');
-        this.campaign = nextLevel === 0 && rta === 0 && igt === 0 ? { segments: [], rtaTicks: 0, clean: true, frames: 0, testFinal: customFinalLevel } : null;
+        this.campaign = nextLevel === 0 && rta === 0 && igt === 0 ? { segments: [], rtaTicks: 0, clean: true, frames: 0, testFinal: customFinalLevel, onlineEligible:this.onlineNow() } : null;
         let pending=false;
         try{if(nextLevel===0&&customFinalLevel===null)localStorage.removeItem(this.pendingKey);else pending=Boolean(localStorage.getItem(this.pendingKey));}catch{}
         if(nextLevel>0&&(typeof indexedDB!=='undefined'||pending))this.resume(nextLevel,rta,igt);
@@ -14584,10 +14912,10 @@ const ReplayRecorder = {
             let offset=0;
             const bytes=new Uint8Array(replay.samples.buffer,replay.samples.byteOffset,replay.samples.byteLength);
             const segments=replay.header.segments.map(segment=>{
-                const buffer=bytes.slice(offset,offset+segment.frames*ReplayFormat.stride);offset+=buffer.length;
-                return {...cloneSave(segment),buffer,clean:true,closed:true};
+                const buffer=bytes.slice(offset,offset+segment.frames*replay.stride);offset+=buffer.length;
+                return {...cloneSave(segment),version:replay.header.version,stride:replay.stride,buffer,clean:true,closed:true};
             });
-            this.campaign={segments,rtaTicks:replay.header.rtaTicks,frames:replay.frames,clean:true};
+            this.campaign={segments,rtaTicks:replay.header.rtaTicks,frames:replay.frames,clean:true,onlineEligible:replay.header.onlineEligible!==false};
             RunTiming.rta={base:0,ticks:replay.header.rtaTicks,last:rta};
             RunTiming.igt={base:0,ticks:replay.header.igtTicks,last:igt};
             this.status='Full-run recording resumed.';
@@ -14597,7 +14925,7 @@ const ReplayRecorder = {
         const run=this.campaign;
         if(!run||!run.clean||runInvalidated||customFinalLevel!==null||isPracticeMode||isSpeedrunMode||RunTiming.nextLevel<1||RunTiming.nextLevel>=levels.length)return;
         const segments=[...run.segments],record=this.current;
-        if(record&&!record.closed&&record.frames)segments.push({...record,result:'exit',buffer:record.buffer.slice(0,record.frames*ReplayFormat.stride)});
+        if(record&&!record.closed&&record.frames)segments.push({...record,result:'exit',buffer:record.buffer.slice(0,record.frames*record.stride)});
         if(segments.length)try{
             const bytes=this.file(segments,'checkpoint'),parts=[];
             for(let i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode(...bytes.subarray(i,i+8192)));
@@ -14609,14 +14937,15 @@ const ReplayRecorder = {
     begin(index, source) {
         this.close('restart'); this.ghost = null;
         if (SplitScreen.active || source.isCustom || LevelEditor.testing) { this.current = null; return; }
-        this.current = { level: index, course: ReplayFormat.course(source), buffer: new Uint8Array(13 * 1024), frames: 0,
-            timeTicks: 0, launchTick: 0, waitTicks: 0, retryInputs: [], result: 'exit', events: [], clean: !cheatsEnabled, closed: false };
+        this.current = { onlineEligible:this.onlineNow(), level: index, course: ReplayFormat.course(source), buffer: new Uint8Array((Simulation.variableDt?21:13) * 1024), frames: 0,
+            version:Simulation.variableDt?2:1,stride:Simulation.variableDt?21:13,durationTicks:0,timeTicks: 0, launchTick: 0, waitTicks: 0, retryInputs: [], result: 'exit', events: [], clean: !cheatsEnabled, closed: false };
         if (saveData.showGhost !== false) ReplayLibrary.loadGhost(index, this.current.course);
     },
     before(session, dt) {
+        if(!this.onlineNow())this.markOffline();
         const record = this.current;
         if (!record || record.closed) return;
-        if (dt !== 0.5 || !Simulation.stepping) record.clean = false;
+        if (!Simulation.stepping || !Number.isFinite(dt) || dt<=0 || dt>1+1e-7 || (record.version===1&&dt!==0.5)) record.clean = false;
         if (cheatsEnabled || (!cosmeticFlightEligible && customFinalLevel === null) || session.physics.gravity !== BASE_GRAVITY ||
             session.physics.thrust !== BASE_THRUST || session.physics.rotation !== BASE_ROTATION_SPEED) record.clean = false;
         record.epoch = session.player.renderEpoch || 0;
@@ -14624,32 +14953,35 @@ const ReplayRecorder = {
     after(session, actions, dt) {
         const record = this.current;
         if (!record || record.closed) return;
-        if (dt !== 0.5 || !Simulation.stepping || record.frames >= ReplayFormat.maxFrames) {
-            record.clean = false; this.status = 'Replay unavailable: recording requires 120 Hz ticks and fits up to one hour.';
+        if (!Simulation.stepping || !Number.isFinite(dt) || dt<=0 || dt>1+1e-7 || (record.version===1&&dt!==0.5) || record.frames >= ReplayFormat.maxFrames) {
+            record.clean = false; this.status = 'Replay unavailable: invalid update duration or recording limit exceeded.';
             return;
         }
-        const needed = (record.frames + 1) * ReplayFormat.stride;
+        const needed = (record.frames + 1) * record.stride;
         if (needed > record.buffer.length) {
-            const buffer = new Uint8Array(Math.min(ReplayFormat.maxFrames * ReplayFormat.stride, record.buffer.length * 2));
+            const buffer = new Uint8Array(Math.min(ReplayFormat.maxFrames * record.stride, record.buffer.length * 2));
             buffer.set(record.buffer); record.buffer = buffer;
         }
-        const data = new DataView(record.buffer.buffer), offset = record.frames * ReplayFormat.stride;
+        const data = new DataView(record.buffer.buffer), offset = record.frames * record.stride;
         data.setUint8(offset, ReplayFormat.flags(session, actions, record.epoch));
         data.setFloat32(offset + 1, session.player.x, true); data.setFloat32(offset + 5, session.player.y, true);
         data.setFloat32(offset + 9, getNormalizedAngle(session.player), true);
+        if(record.version===2)data.setFloat64(offset+13,dt,true);
+        record.durationTicks+=dt*2;
         record.frames++;
         record.timeTicks = session.clock.ticks;
         if (!session.hasMoved) record.launchTick = record.frames;
         if (session.state === 'lost' || session.state === 'won') this.close(session.state);
     },
-    runTick() {
+    runTick(dt) {
+        if(!this.onlineNow())this.markOffline();
         if (!this.campaign) return;
-        this.campaign.rtaTicks++;
+        this.campaign.rtaTicks+=dt*2;
         if (state === 'lost' && this.current?.closed) {
             const record=this.current,mask=ReplayFormat.mask(Simulation.actions()),last=record.retryInputs.at(-1);
-            record.waitTicks++;
-            if(last&&last[0]===mask)last[1]++;
-            else if(record.retryInputs.length<2048)record.retryInputs.push([mask,1]);
+            record.waitTicks+=dt*2;
+            if(last&&last[0]===mask)last[1]+=dt*2;
+            else if(record.retryInputs.length<2048)record.retryInputs.push([mask,dt*2]);
             else this.campaign.clean=false;
         }
         if (this.campaign.rtaTicks > ReplayFormat.maxFrames * 6) this.campaign.clean = false;
@@ -14662,7 +14994,7 @@ const ReplayRecorder = {
         const record = this.current;
         if (!record || record.closed) return;
         record.closed = true; record.result = result;
-        record.buffer = record.buffer.slice(0, record.frames * ReplayFormat.stride);
+        record.buffer = record.buffer.slice(0, record.frames * record.stride);
         if (!record.frames) return;
         if (this.campaign) {
             this.campaign.frames += record.frames;
@@ -14673,36 +15005,85 @@ const ReplayRecorder = {
         if (record.clean && record.timeTicks > 0 && customFinalLevel===null && this.campaign?.testFinal==null) this.enqueue(this.file([record], 'flight'), 'flight');
     },
     file(segments, kind) {
-        const samples = new Uint8Array(segments.reduce((sum, segment) => sum + segment.frames * ReplayFormat.stride, 0));
+        const samples = new Uint8Array(segments.reduce((sum, segment) => sum + segment.frames * (segment.stride||ReplayFormat.strideFor({version:segment.version||1})), 0));
         let offset = 0;
         const metadata = segments.map(segment => {
             samples.set(segment.buffer, offset); offset += segment.buffer.length;
-            return { level: segment.level, course: segment.course, courseDigest: ReplayFormat.courseDigest(ReplayFormat.source(segment.level)), frames: segment.frames, timeTicks: segment.timeTicks,
+            return { onlineEligible:segment.onlineEligible!==false,durationTicks:segment.durationTicks,level: segment.level, course: segment.course, courseDigest: ReplayFormat.courseDigest(ReplayFormat.source(segment.level)), frames: segment.frames, timeTicks: segment.timeTicks,
                 launchTick: segment.launchTick, waitTicks: segment.waitTicks, retryInputs: segment.retryInputs, result: segment.result, events: segment.events };
         });
         this.lastCreated = Math.max(Date.now(), this.lastCreated + 1);
-        return ReplayFormat.encode({ version: 1, saveEpoch: 1, rules: ReplayFormat.rules, physics: ReplayFormat.physics, engine: ReplayFormat.engine, hz: 120, kind, createdAt: this.lastCreated,
-            clean: segments.every(segment => segment.clean), ...(kind==='test'?{finalLevel:this.campaign.testFinal}:{}), segments: metadata,
-            rtaTicks: kind !== 'flight' ? this.campaign.rtaTicks : segments[0].frames + segments[0].waitTicks,
+        const version=segments[0].version||1;
+        if(segments.some(s=>(s.version||1)!==version))throw Error('Cannot combine replay versions.');
+        return ReplayFormat.encode({ version, gameVersion:version===2?ReplayFormat.gameVersion:'2.0.0', saveEpoch: 1, rules: version===2?ReplayFormat.rules:'v2-ticks-1', physics: ReplayFormat.physics, engine: ReplayFormat.engine, hz: 120, kind, createdAt: this.lastCreated,
+            onlineEligible:segments.every(segment=>segment.onlineEligible!==false)&&(kind==='flight'||this.campaign.onlineEligible!==false),
+            clean: segments.every(segment => segment.clean), ...(kind==='test'?{finalLevel:this.campaign.testFinal??currentLevelIndex,
+                ...(this.campaign.invalidReason?{invalidReason:this.campaign.invalidReason}:{})}:{}), segments: metadata,
+            rtaTicks: kind !== 'flight' ? this.campaign.rtaTicks : (segments[0].durationTicks??segments[0].frames) + segments[0].waitTicks,
             igtTicks: kind !== 'flight' ? segments.filter(segment => segment.result === 'won').reduce((sum, segment) => sum + segment.timeTicks, 0) : segments[0].timeTicks }, samples);
     },
-    completeRun() {
+    completeRun(invalidReason = '') {
         const run = this.campaign;
-        if (!run || !run.clean || (runInvalidated&&run.testFinal==null)) {this.status='No complete run recording: earlier inputs are missing or the run is ineligible.';return;}
-        try { this.enqueue(this.file(run.segments, run.testFinal==null?'campaign':'test'), run.testFinal==null?'campaign':'test'); }
+        if (!run) {this.status='No complete run recording: earlier inputs are missing.';return;}
+        if(run.testFinal==null&&(invalidReason||runInvalidated||!run.clean))run.invalidReason=invalidReason||'Run recording is ineligible for records.';
+        try {
+            const kind=run.testFinal==null&&!run.invalidReason?'campaign':'test',bytes=this.file(run.segments,kind);
+            if(kind==='campaign'||kind==='test'){
+                const parts=[];
+                for(let i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode(...bytes.subarray(i,i+8192)));
+                try{localStorage.setItem(this.pendingKey+'_completed',JSON.stringify({generation:saveData.replayGeneration,data:btoa(parts.join(''))}));}
+                catch(error){this.status=`Completed recording recovery copy could not be saved: ${error.message}`;}
+            }
+            this.enqueue(bytes,kind);
+        }
         catch (error) { this.status = error.message; }
         this.campaign = null;
     },
     enqueue(bytes, kind) {
-        const job = ReplayLibrary.accept(bytes, kind).catch(error => { this.status = `Replay could not be checked: ${error.message}`; });
+        const completedKey=this.pendingKey+'_completed',generation=saveData.replayGeneration;
+        const job = ReplayLibrary.accept(bytes, kind).then(checked=>{
+            if(!['campaign','test'].includes(kind))return;
+            const entry=kind==='campaign'?ReplayLibrary.entries.get('last:campaign'):ReplayLibrary.entries.get(`test:campaign:${checked.replay.header.createdAt}`);
+            if(entry?.persisted&&entry.checked?.digest===checked.digest){
+                this.forgetCompleted(checked.replay,completedKey,generation);
+            }
+        }).catch(async error => {
+            this.status = `Replay could not be checked: ${error.message}`;
+            if(kind==='campaign'||kind==='test'){
+                const entry=ReplayLibrary.entry('session:unsaved',ReplayFormat.decode(bytes));
+                entry.error=error.message;ReplayLibrary.pending=entry;
+                await ReplayLibrary.write(entry);
+            }
+        });
         this.jobs.add(job); job.finally(() => this.jobs.delete(job));
+    },
+    forgetCompleted(replay,key=this.pendingKey+'_completed',generation=saveData.replayGeneration) {
+        if(!['campaign','test'].includes(replay.header.kind))return;
+        try{
+            const journal=JSON.parse(localStorage.getItem(key)||'null');
+            if(journal?.generation!==generation)return;
+            const raw=atob(journal.data),saved=ReplayFormat.decode(Uint8Array.from(raw,c=>c.charCodeAt(0)));
+            if(saved.header.createdAt===replay.header.createdAt)localStorage.removeItem(key);
+        }catch{/* Keep the recovery copy if its identity cannot be established. */}
+    },
+    async recoverCompleted() {
+        const key=this.pendingKey+'_completed',generation=saveData.replayGeneration;
+        await ReplayLibrary.ready;
+        if(key!==this.pendingKey+'_completed'||generation!==saveData.replayGeneration)return;
+        try{
+            const journal=JSON.parse(localStorage.getItem(key)||'null');
+            if(!journal||journal.generation!==generation)return;
+            const raw=atob(journal.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),replay=ReplayFormat.decode(bytes);
+            if(!['campaign','test'].includes(replay.header.kind)||!V21Upgrade.eligibleReplay(replay.header))throw Error('Unsupported completed recording recovery copy.');
+            this.enqueue(bytes,replay.header.kind);
+        }catch(error){this.status=`Completed recording recovery failed: ${error.message}`;}
     },
     ghostPose() {
         if (typeof CloudRace !== 'undefined' && CloudRace.entry) return CloudRace.pose();
         if (!this.ghost || saveData.showGhost === false || !hasMoved || currentLevel?.isCustom) return null;
         const replay = this.ghost.replay, segment = replay.header.segments[0];
-        const position = Math.max(0, soloFlightClock.ticks - 2 + Simulation.alpha);
-        const tick = segment.launchTick + position;
+        const launchTicks=segment.launchTick?ReplayFormat.timeline(replay)[segment.launchTick-1]:0;
+        const tick = ReplayFormat.frameAt(replay,0,segment.frames,launchTicks+soloFlightClock.ticks);
         if (tick >= segment.frames) return null;
         const index = Math.floor(tick), a = ReplayFormat.pose(replay, index), b = ReplayFormat.pose(replay, index + 1);
         if (!a || !b) return a;
@@ -14730,14 +15111,18 @@ const ReplayLibrary = {
                 request.onsuccess = () => {
                     this.database = request.result;
                     this.database.onversionchange = () => { this.database.close(); this.database = null; };
-                    const transaction = this.database.transaction('recordings', 'readonly');
+                    const transaction = this.database.transaction('recordings', 'readwrite');
                     const read = transaction.objectStore('recordings').getAll();
                     read.onsuccess = () => {
                         let used = 0;
                         for (const stored of read.result) {
                             try {
-                                if ((stored.generation || 'initial') !== saveData.replayGeneration) continue;
                                 const replay = ReplayFormat.decode(stored.bytes), key = stored.slot || stored.key;
+                                if(!V21Upgrade.eligibleReplay(replay.header)){
+                                    if(replay.header.version===1||replay.header.gameVersion==='2.0.0')transaction.objectStore('recordings').delete(stored.key);
+                                    continue;
+                                }
+                                if ((stored.generation || 'initial') !== saveData.replayGeneration) continue;
                                 if (typeof key !== 'string') continue;
                                 const entry = this.entry(key, replay); entry.storageKey = stored.key;
                                 if (key === 'session:unsaved') { this.pending = entry; continue; }
@@ -14777,12 +15162,25 @@ const ReplayLibrary = {
             this.status = 'Replay library is full. The session recording can still be exported.'; return null;
         }
         this.entries.set(key, entry);
-        await this.write(entry);
+        entry.persisted=await this.write(entry);
         if (typeof CloudAccount !== 'undefined') CloudAccount.markDirty();
         return entry;
     },
+    async clearForUpgrade() {
+        this.entries.clear();this.pending=null;this.generation++;
+        ReplayRecorder.current=null;ReplayRecorder.campaign=null;ReplayRecorder.ghost=null;
+        localStorage.removeItem(ReplayRecorder.pendingKey);
+        saveData.replayGeneration=`v21_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+        if(!this.database)return;
+        await new Promise((resolve,reject)=>{
+            const tx=this.database.transaction('recordings','readwrite'),store=tx.objectStore('recordings'),read=store.getAll();
+            read.onsuccess=()=>{for(const row of read.result)store.delete(row.key);};
+            tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(Error('Could not clear old recordings. Please retry the upgrade.'));
+        });
+    },
     async accept(bytes, origin = 'import') {
         await this.ready;
+        if(!V21Upgrade.eligibleReplay(ReplayFormat.decode(bytes).header))throw Error('This recording was made on a disallowed game version. Record a new run in V2.1.');
         const checked = await ReplayFormat.verify(bytes);
         const { header } = checked.replay;
         let linked=false;
@@ -14818,6 +15216,7 @@ const ReplayLibrary = {
         return checked;
     },
     async check(entry) {
+        if(!V21Upgrade.eligibleReplay(entry.replay.header))throw Error('This recording requires a new run in V2.1.');
         if (entry.checked) return entry.checked;
         if (!entry.checking) {
             entry.checking = ReplayFormat.verify(entry.replay.bytes).then(checked => {
@@ -14886,7 +15285,7 @@ const ReplayLibrary = {
         return 'NO REPLAY';
     },
     async remove(entry) {
-        if (entry.key === 'session:unsaved' && !entry.storageKey) { this.pending = null; return; }
+        if (entry.key === 'session:unsaved' && !entry.storageKey) { ReplayRecorder.forgetCompleted(entry.replay);this.pending = null; return; }
         if (this.database) {
             const ok = await new Promise(resolve => {
                 try {
@@ -14897,6 +15296,7 @@ const ReplayLibrary = {
             });
             if (!ok) { this.status = 'Could not delete the saved replay.'; return; }
         }
+        ReplayRecorder.forgetCompleted(entry.replay);
         this.entries.delete(entry.key); if(entry.key==='session:unsaved')this.pending=null; this.status = 'Replay removed. Personal best times are unchanged.';
     },
     backupArchive() {
@@ -14953,6 +15353,7 @@ const ReplayLibrary = {
         const checked=[];
         for(const file of archive.files) {
             const raw=atob(file),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+            if(!V21Upgrade.eligibleReplay(ReplayFormat.decode(bytes).header))throw Error('This archive contains recordings from a disallowed game version.');
             checked.push(await ReplayFormat.verify(bytes));
         }
         for(const claim of archive.claims||[]){
@@ -15028,7 +15429,7 @@ const ReplayLibrary = {
 const ReplayPlayer = {
     active: false, paused: false, speed: 1, accumulator: 0, tick: 0, segmentIndex: 0,
     segmentTick: 0, waiting: 0, elapsed: 0, previous: null, session: null, entry: null, seeking: false, request: 0,
-    rtaTicks: 0, runStarted: false, controlsIdle: 0, controlsHidden: false,
+    rtaTicks: 0, runStarted: false, controlsIdle: 0, controlsHidden: false, history: [],
     async play(entry) {
         const request = ++this.request;
         ReplayLibrary.status = 'Checking replay controls and flight...';
@@ -15052,40 +15453,53 @@ const ReplayPlayer = {
         this.session = ReplayFormat.session(this.entry.replay, segment);
         this.session.replayVisuals=true;
         this.session.particles=Array.from({length:256},()=>({active:false}));
-        this.segmentTick = 0; this.waiting = 0; this.previous = null;
+        this.segmentTick = 0; this.waiting = 0; this.previous = null; this.history = [];
+    },
+    nextTicks() {
+        const replay=this.entry.replay,segment=replay.header.segments[this.segmentIndex];
+        if(this.segmentTick>=segment.frames && this.waiting<segment.waitTicks)
+            return Math.min(replay.header.version===2?2:1,segment.waitTicks-this.waiting);
+        return ReplayFormat.pose(replay,this.tick)?.dt*2 || 1;
     },
     step() {
         const segments = this.entry.replay.header.segments;
         let segment = segments[this.segmentIndex];
         if (this.segmentTick >= segment.frames) {
-            if (this.waiting < segment.waitTicks) { this.waiting++; this.elapsed++;if(this.runStarted)this.rtaTicks++;return true; }
+            if (this.waiting < segment.waitTicks) { const duration=this.nextTicks();this.waiting+=duration;this.elapsed+=duration;if(this.runStarted)this.rtaTicks+=duration;return true; }
             if (++this.segmentIndex >= segments.length) { this.segmentIndex = segments.length-1; this.paused = true; return false; }
             this.loadSegment(); segment = segments[this.segmentIndex];
         }
-        this.previous = { player: {...this.session.player}, camera: {...this.session.camera}, state: this.session.state };
+        this.previous = { player: {...this.session.player}, camera: {...this.session.camera}, state: this.session.state, phaseTime: this.session.phaseTime };
+        if(!this.history.length)this.history.push({...this.previous,time:this.elapsed});
         const pose = ReplayFormat.pose(this.entry.replay, this.tick);
         if(pose.flags&7)this.runStarted=true;
-        if(this.runStarted)this.rtaTicks++;
-        stepFlightSession(this.session, ReplayFormat.actions(pose.flags), 0.5);
-        updateFlightEffects(this.session,0.5);
-        this.tick++; this.segmentTick++; this.elapsed++;
+        if(this.runStarted)this.rtaTicks+=pose.dt*2;
+        stepFlightSession(this.session, ReplayFormat.actions(pose.flags), pose.dt);
+        updateFlightEffects(this.session,pose.dt);
+        this.lastDuration=pose.dt*1000/60;
+        this.tick++; this.segmentTick++; this.elapsed+=pose.dt*2;
         const ship = this.session.player, level = this.session.level;
         this.session.camera.x = Math.max(0, Math.min(ship.x-GAME_WIDTH/2,level.width-GAME_WIDTH));
         this.session.camera.y = Math.max(0, Math.min(ship.y-GAME_HEIGHT/2,level.height-GAME_HEIGHT));
+        this.history.push({player:{...ship},camera:{...this.session.camera},state:this.session.state,phaseTime:this.session.phaseTime,time:this.elapsed});
+        // Keep a bracketing pair for a fixed 1/60-second visual delay. A delay
+        // based on the last sample's dt jitters when input boundaries create tiny steps.
+        while(this.history.length>2&&this.history[1].time<this.elapsed-2)this.history.shift();
         return true;
     },
     advance(milliseconds) {
         this.controlsIdle+=milliseconds;
         if (this.paused || this.seeking) return;
         this.accumulator += milliseconds * this.speed;
-        while (this.accumulator >= 1000/120) {
+        while (!this.paused && this.accumulator+1e-7 >= this.nextTicks()*1000/120) {
+            const duration=this.nextTicks()*1000/120;
             if (!this.step()) { this.accumulator = 0; break; }
-            this.accumulator -= 1000/120;
+            this.accumulator = Math.max(0,this.accumulator-duration);
         }
     },
     async seek(deltaSeconds) {
         if (this.seeking) return;
-        const total = this.entry.replay.header.segments.reduce((sum, segment) => sum+segment.frames+segment.waitTicks,0);
+        const total = this.entry.replay.header.segments.reduce((sum, segment) => sum+(segment.durationTicks??segment.frames)+segment.waitTicks,0);
         const target = Math.max(0,Math.min(total,this.elapsed+Math.round(deltaSeconds*120)));
         this.seeking = true; const request = this.request;
         this.restart();
@@ -15096,7 +15510,7 @@ const ReplayPlayer = {
             if (!this.step()) break;
             if (++count % 240 === 0) await new Promise(resolve => setTimeout(resolve,0));
         }
-        this.seeking = false; this.accumulator = 0; this.previous = null;
+        this.seeking = false; this.accumulator = 0; this.previous = null; this.history = [];
     },
     stop() {
         this.request++; this.active = false; this.seeking = false;
@@ -15128,16 +15542,22 @@ const ReplayPlayer = {
     draw() {
         const session = this.session;
         if (!session) return;
-        let ship=session.player,camera=session.camera;
-        if(this.previous&&!this.paused&&!this.seeking&&this.previous.state===session.state&&this.previous.player.renderEpoch===ship.renderEpoch){
-            const alpha=this.accumulator/(1000/120);
-            ship={...ship,x:this.previous.player.x+(ship.x-this.previous.player.x)*alpha,y:this.previous.player.y+(ship.y-this.previous.player.y)*alpha,
-                angle:this.previous.player.angle+(ship.angle-this.previous.player.angle)*alpha};
-            camera={...camera,x:this.previous.camera.x+(camera.x-this.previous.camera.x)*alpha,y:this.previous.camera.y+(camera.y-this.previous.camera.y)*alpha};
+        let ship=session.player,camera=session.camera,phaseTime=session.phaseTime;
+        if(!this.seeking&&this.history.length>1){
+            const target=this.elapsed+this.accumulator*120/1000-2;
+            let index=0;while(index+1<this.history.length-1&&this.history[index+1].time<target)index++;
+            const before=this.history[index],after=this.history[index+1];
+            if(before.state===session.state&&after.state===session.state&&before.player.renderEpoch===ship.renderEpoch&&after.player.renderEpoch===ship.renderEpoch){
+                const alpha=Math.max(0,Math.min(1,(target-before.time)/(after.time-before.time)));
+                phaseTime=before.phaseTime+(after.phaseTime-before.phaseTime)*alpha;
+                ship={...ship,x:before.player.x+(after.player.x-before.player.x)*alpha,y:before.player.y+(after.player.y-before.player.y)*alpha,
+                    angle:before.player.angle+(after.player.angle-before.player.angle)*alpha};
+                camera={...camera,x:before.camera.x+(after.camera.x-before.camera.x)*alpha,y:before.camera.y+(after.camera.y-before.camera.y)*alpha};
+            }
         }
         drawGameScene(ctx, { width: GAME_WIDTH, height: GAME_HEIGHT }, {
             level: session.level, player: ship, camera,
-            obstacles: session.obstacles, zones: session.zones, items: session.items,
+            obstacles: session.obstacles, phaseTime, zones: session.zones, items: session.items,
             parallax: [], dust: [], particles: session.particles, state: session.state, timer: session.timer,
             thrusterFlicker: session.thrusterFlicker, worldOnly: true
         });
@@ -15200,7 +15620,7 @@ const ReplayMenu = {
     },
     label(group) {
         const roles=[];
-        if(group.entry.replay.header.kind==='test')roles.push('INVALID / TEST RUN');
+        if(group.entry.replay.header.kind==='test')roles.push(group.entry.replay.header.invalidReason?'UNRANKED / FULL RUN':'INVALID / TEST RUN');
         if(group.aliases.some(entry=>entry.key==='best:campaign:rta'))roles.push('Best RTA');
         if(group.aliases.some(entry=>entry.key==='best:campaign:igt'))roles.push('Best IGT');
         if(group.aliases.some(entry=>entry.key.startsWith('best:')&&!entry.key.startsWith('best:campaign:')))roles.push('Best time');
@@ -15239,7 +15659,7 @@ function drawReplayLibrary() {
     ctx.textAlign='left';ctx.font='12px monospace';ctx.fillStyle='#9baebb';ctx.fillText('SELECTED RECORDING',780,261);
     if(group){
         const entry=group.entry,header=entry.replay.header,segment=header.segments[0];
-        ctx.font='bold 20px monospace';ctx.fillStyle='#edf4f8';ctx.fillText(['campaign','test'].includes(header.kind)?(header.kind==='test'?'INVALID / TEST RUN':'Full campaign'):segment.level===-1?'Tutorial':`Level ${segment.level+1}`,780,297);
+        ctx.font='bold 20px monospace';ctx.fillStyle='#edf4f8';ctx.fillText(['campaign','test'].includes(header.kind)?(header.kind==='test'?(header.invalidReason?'Unranked full run':'INVALID / TEST RUN'):'Full campaign'):segment.level===-1?'Tutorial':`Level ${segment.level+1}`,780,297);
         ctx.font='14px monospace';ctx.fillStyle='#9baebb';
         ctx.fillText(['campaign','test'].includes(header.kind)?`RTA ${(header.rtaTicks/120).toFixed(3)}s`:`Flight ${(header.igtTicks/120).toFixed(3)}s`,780,328);
         ctx.fillText(['campaign','test'].includes(header.kind)?`IGT ${(header.igtTicks/120).toFixed(3)}s`:({won:'Completed',lost:'Crashed',restart:'Restarted',exit:'Ended'})[segment.result],780,352);
@@ -15257,7 +15677,7 @@ function drawReplayLibrary() {
     }
     drawMenuPager('replays',ReplayLibrary.page,pages,220,720,560);
     ctx.font='12px monospace';ctx.fillStyle='#a9bbc7';ctx.textAlign='left';
-    ctx.fillText(fitMenuText(ReplayLibrary.auditStatus||ReplayLibrary.status||ReplayRecorder.status||'Complete backups include all recordings.',840),220,611);
+    ctx.fillText(fitMenuText(ReplayLibrary.auditStatus||ReplayLibrary.status||ReplayRecorder.status||'Backups exclude recordings. Export individual .rgr files to keep them.',840),220,611);
     drawMenuFooter('back_replays');
 }
 
@@ -15313,6 +15733,7 @@ const CloudAccount = {
     meta: { revision: 0, dirty: false, published: [] },
     endpoint(action, query = {}) {
         const url = new URL(`${CloudConfig.url}/functions/v1/retrograde-api`);
+        url.searchParams.set('client',V21Upgrade.version);
         url.searchParams.set('action', action); url.searchParams.set('api', '2');
         for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
         return url.toString();
@@ -15440,17 +15861,17 @@ const CloudAccount = {
         try {
             const raw = JSON.parse(localStorage.getItem(this.metaKey()));
             return { revision: Number.isSafeInteger(raw?.revision) && raw.revision >= 0 ? raw.revision : 0,
-                lastSyncedAt: Number(raw?.lastSyncedAt) || 0, jobs: raw?.jobs && typeof raw.jobs === 'object' && !Array.isArray(raw.jobs) ? Object.fromEntries(Object.entries(raw.jobs).filter(([digest,job])=>/^[a-f0-9]{64}$/.test(digest)&&job&&typeof job.id==='string').slice(-192)) : {},
-                dirty: raw?.dirty === true, published: Array.isArray(raw?.published) ? raw.published.filter(v => /^[a-f0-9]{64}$/.test(v)).slice(-192) : [] };
+                lastSyncedAt: Number(raw?.lastSyncedAt) || 0, jobs: raw?.competitiveEpoch===21 && raw?.jobs && typeof raw.jobs === 'object' && !Array.isArray(raw.jobs) ? Object.fromEntries(Object.entries(raw.jobs).filter(([digest,job])=>/^[a-f0-9]{64}$/.test(digest)&&job&&typeof job.id==='string').slice(-192)) : {},
+                dirty: raw?.dirty === true, published: raw?.competitiveEpoch===21 && Array.isArray(raw?.published) ? raw.published.filter(v => /^[a-f0-9]{64}$/.test(v)).slice(-192) : [] };
         } catch { return { revision: 0, dirty: false, published: [], jobs: {}, lastSyncedAt: 0 }; }
     },
     writeMeta() {
-        try { localStorage.setItem(this.metaKey(), JSON.stringify(this.meta)); }
+        try { localStorage.setItem(this.metaKey(), JSON.stringify({...this.meta,competitiveEpoch:21})); }
         catch { this.status = 'Cloud sync state could not be stored. Sync again before closing.'; }
     },
     databaseName() { return 'retrograde_v2_fresh1_replays' + (this.scope === 'guest' ? '' : `_${this.scope}`); },
     scheduleSync(delay = 5000) {
-        if (!this.session || this.conflict || this.pendingGuest || this.suppress || this.needsAttention) return;
+        if (this.releasePending || this.maintenancePending || !this.session || this.conflict || this.pendingGuest || this.suppress || this.needsAttention) return;
         if (this.timer) clearTimeout(this.timer);
         const serial=this.serial;
         this.timer=setTimeout(()=>{this.timer=null;if(this.serial===serial)this.sync().catch(()=>{});},delay);
@@ -15489,6 +15910,9 @@ const CloudAccount = {
         this.jobTimer=setTimeout(()=>{this.jobTimer=null;if(serial===this.serial)this.sync().catch(()=>{});},15000);
     },
     async switchScope(scope) {
+        if(typeof Operations!=='undefined'&&scope!==this.scope)Operations.reset();
+        this.maintenancePending=false;
+        this.releasePending=false;
         this.serial++; this.firstDirtyAt=0;this.retryAttempt=0;this.networkOffline=false;this.needsAttention=false;this.authExpired=false;
         if(this.jobTimer)clearTimeout(this.jobTimer);this.jobTimer=null;
         if (this.timer) clearTimeout(this.timer); this.timer = null;
@@ -15503,12 +15927,14 @@ const CloudAccount = {
         ReplayRecorder.resumeRequest++; ReplayRecorder.restoring = null;
         this.scope = scope; this.lastCleanup = 0;
         const suffix = scope === 'guest' ? '' : `_${scope}`;
-        SaveStore.keys = ['retrograde_v2_fresh1_snapshot_a', 'retrograde_v2_fresh1_snapshot_b'].map(key => key + suffix);
+        SaveStore.keys = ['retrograde_v21_snapshot_a', 'retrograde_v21_snapshot_b'].map(key => key + suffix);
+        SaveStore.legacyKeys = ['retrograde_v2_fresh1_snapshot_a', 'retrograde_v2_fresh1_snapshot_b'].map(key => key + suffix);
         ReplayRecorder.pendingKey = 'retrograde_v2_fresh1_pending_run' + suffix;
         SaveStore.sequence = 0; SaveStore.base = null; SaveStore.pendingRestore = null;
         SaveStore.checkpointDirty = false; SaveStore.notice = ''; SaveStore.init();
         LevelEditor.preferencesLoaded = false; LevelEditor.model = null; LevelEditor.draftActive = false;
         ReplayLibrary.init(); await ReplayLibrary.ready;
+        await ReplayRecorder.recoverCompleted();
         this.meta = this.readMeta();
         isPracticeMode = false; isSpeedrunMode = false; runState = 'inactive';
         runInvalidated = false; isPaused = false; customFinalLevel = null; cheatsEnabled = false;
@@ -15527,16 +15953,36 @@ const CloudAccount = {
         if (this.rememberError) this.status = this.rememberError;
     },
     async connectSession(session) {
-        let guestBackup = null;
+        let guestBackup = null, guestReplays = null;
         if (this.scope === 'guest') {
             goToMenu(); storeSaveDataImmediate();
             guestBackup = await SaveStore.backupFile();
+            guestReplays = ReplayLibrary.backupArchive();
         }
         this.pendingGuest = null;
         this.suppress = true;
         try {
             await this.switchScope(session.user_id);
             this.session = session; this.persistSession();
+            // Resolve role and maintenance immediately after authentication. A
+            // lock must not strand login on protected upgrade/save requests.
+            if(typeof Operations!=='undefined'&&Operations.root){
+                await Operations.poll();
+                if(Operations.status?.active){
+                    this.maintenancePending=true;
+                    this.ready=true;
+                    this.status=Operations.status.developer?'Developer access is available during maintenance.':Operations.status.active.message;
+                    return;
+                }
+            }
+            const upgrade=await this.request('upgrade',{method:'POST',auth:true});
+            if(upgrade.pending){this.releasePending=true;this.ready=true;this.status='V2.1 cloud upgrades are staged until release. V2 accounts are unchanged.';return;}
+            if(upgrade.applied){
+                saveData=normalizeGameSave(V21Upgrade.game(saveData,true),true);
+                await ReplayLibrary.clearForUpgrade();
+                if(!storeSaveDataImmediate())throw new Error(SaveStore.status);
+                this.meta.jobs={};this.meta.published=[];this.writeMeta();
+            }
             const remote = await this.request('save', { auth: true });
             if (this.meta.dirty && this.meta.revision !== remote.revision) {
                 this.conflict = remote; this.status = 'This device and cloud have different saves. Choose which to keep.';
@@ -15545,7 +15991,7 @@ const CloudAccount = {
             } else if (remote.available || remote.url) {
                 await this.restoreRemote(remote);
             } else {
-                if (guestBackup && remote.revision === 0) this.pendingGuest = guestBackup;
+                if (guestBackup && remote.revision === 0) this.pendingGuest = {backup:guestBackup,replays:guestReplays};
                 this.meta.revision = remote.revision; this.meta.dirty = !this.pendingGuest; this.writeMeta();
                 this.status = 'New cloud account. Your guest save is kept separately.';
             }
@@ -15565,7 +16011,8 @@ const CloudAccount = {
         }
         this.suppress = true;
         try {
-            if (!await SaveStore.readBackupFile(this.pendingGuest)) throw new Error(loadStatus);
+            if (!await SaveStore.readBackupFile(this.pendingGuest.backup)) throw new Error(loadStatus);
+            SaveStore.pendingRestore.replays=ReplayLibrary.validateArchive(this.pendingGuest.replays);
             if (!await SaveStore.restoreBackup()) throw new Error(loadStatus);
             this.meta.dirty = true; this.writeMeta(); this.pendingGuest = null;
         } finally { this.suppress = false; }
@@ -15598,7 +16045,7 @@ const CloudAccount = {
             if (!await SaveStore.readBackupFile(bytes.buffer)) throw new Error(loadStatus);
             if (!await SaveStore.restoreBackup()) throw new Error(loadStatus);
             this.meta.revision = remote.revision; this.meta.dirty = false; this.firstDirtyAt=0; this.meta.lastSyncedAt=Date.now(); this.writeMeta();
-            this.conflict = null; this.status = 'Cloud save loaded and recordings checked.';
+            this.conflict = null; this.status = 'Cloud save loaded. Recordings remain separate on this device.';
         } finally { this.suppress = previousSuppression; }
     },
     async choosePrevious() {
@@ -15620,7 +16067,7 @@ const CloudAccount = {
         await this.sync();
     },
     async sync() {
-        if (!this.session || this.suppress || this.conflict || this.pendingGuest) return;
+        if (this.releasePending || this.maintenancePending || !this.session || this.suppress || this.conflict || this.pendingGuest) return;
         if (this.uploading) return this.uploading;
         const owner = this.scope, serial = this.serial;
         if(this.timer)clearTimeout(this.timer);this.timer=null;
@@ -15685,8 +16132,8 @@ const CloudAccount = {
         const sent = new Set(this.meta.published);
         return ReplayLibrary.rows().some(entry =>
             (entry.key.startsWith('best:') || entry.key === 'last:campaign') &&
-            entry.checked?.completed && ['flight', 'campaign'].includes(entry.replay.header.kind) &&
-            entry.replay.header.segments[0].level >= 0 && !ReplayFormat.compatibility(entry.replay) &&
+            entry.replay.header.onlineEligible!==false && entry.checked?.completed && ['flight', 'campaign'].includes(entry.replay.header.kind) &&
+            entry.replay.header.segments[0].level >= 0 && V21Upgrade.eligibleReplay(entry.replay.header) && !ReplayFormat.compatibility(entry.replay) &&
             !sent.has(entry.checked.digest) && !this.meta.jobs?.[entry.checked.digest]);
     },
     async publishRecords() {
@@ -15706,7 +16153,7 @@ const CloudAccount = {
         for(const entry of ReplayLibrary.rows()){
             if(serial!==this.serial)return;
             if(!entry.key.startsWith('best:')&&entry.key!=='last:campaign')continue;
-            if(!entry.checked?.completed||!['flight','campaign'].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level<0||ReplayFormat.compatibility(entry.replay))continue;
+            if(entry.replay.header.onlineEligible===false||!V21Upgrade.eligibleReplay(entry.replay.header)||!entry.checked?.completed||!['flight','campaign'].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level<0||ReplayFormat.compatibility(entry.replay))continue;
             const digest=entry.checked.digest;
             if(sent.has(digest)||this.meta.jobs[digest])continue;
             if(this.pendingRecords().length>=2)break;
@@ -15752,12 +16199,13 @@ const CloudRace = {
         this.clear(); this.entry = entry;
         let elapsed = 0, offset = 0;
         for (const segment of entry.replay.header.segments) {
-            this.intervals.push({ start: elapsed, end: elapsed + segment.frames, offset, segment });
-            elapsed += segment.frames + segment.waitTicks; offset += segment.frames;
+            this.intervals.push({ start: elapsed, end: elapsed + (segment.durationTicks??segment.frames), offset, segment });
+            elapsed += (segment.durationTicks??segment.frames) + segment.waitTicks; offset += segment.frames;
         }
         this.launch = 0;
         if (entry.replay.header.kind === 'campaign') {
             while (this.launch < entry.replay.frames && !(ReplayFormat.pose(entry.replay, this.launch).flags & 7)) this.launch++;
+            this.launch=this.launch?ReplayFormat.timeline(entry.replay)[this.launch-1]:0;
         }
     },
     pose() {
@@ -15765,13 +16213,14 @@ const CloudRace = {
         const replay = this.entry.replay;
         if (replay.header.kind === 'flight') {
             if (currentLevelIndex !== replay.header.segments[0].level || !hasMoved) return null;
-            return this.at(replay.header.segments[0].launchTick + Math.max(0, soloFlightClock.ticks - 2 + Simulation.alpha));
+            const segment=replay.header.segments[0],launch=segment.launchTick?ReplayFormat.timeline(replay)[segment.launchTick-1]:0;
+            return this.at(ReplayFormat.frameAt(replay,0,segment.frames,launch+soloFlightClock.ticks));
         }
         if (runState !== 'active') return null;
-        const time = Math.max(0, currentRunRTA * 120 - 1 + Simulation.alpha) + this.launch;
+        const time = Math.max(0, currentRunRTA * 120) + this.launch;
         const interval = this.intervals.find(s => time >= s.start && time < s.end);
         if (!interval || interval.segment.level !== currentLevelIndex) return null;
-        return this.at(interval.offset + time - interval.start);
+        return this.at(ReplayFormat.frameAt(replay,interval.offset,interval.segment.frames,time-interval.start));
     },
     at(tick) {
         const replay = this.entry.replay, i = Math.floor(tick), a = ReplayFormat.pose(replay, i), b = ReplayFormat.pose(replay, i + 1);
@@ -16016,15 +16465,22 @@ const CloudUI = {
         try { await work(); } catch (error) { this.status(error.message); }
         finally { this.busy = false; }
     },
-    hide() {
-        if (!this.root || (!this.guestChosen && !CloudAccount.session)) return;
+    hide(force = false) {
+        if (!this.root || (!force && !this.guestChosen && !CloudAccount.session)) return;
         for (const [element, inert] of this.background || []) element.inert = inert;
         this.background = null;
         this.open = false; this.root.hidden = true; this.recoveryCode = ''; this.root.replaceChildren();
         keys = {}; Simulation.clearInput();
+        if(!force&&typeof Operations!=='undefined'&&Operations.locked()){
+            Operations.developerLogin=false;Operations.show('maintenance');
+        }
     },
     show(screen = CloudAccount.session ? 'account' : 'start') {
         if (!this.root) return;
+        if(typeof Operations!=='undefined'&&Operations.locked()&&(!Operations.developerLogin||screen==='start')){
+            Operations.developerLogin=false;
+            Operations.show('maintenance');return;
+        }
         if (!this.open) {
             this.background = [...document.body.children].filter(element => element !== this.root).map(element => [element, element.inert]);
             for (const [element] of this.background) element.inert = true;
@@ -16089,15 +16545,350 @@ const CloudUI = {
 
     </script>
     <script>
+// Public status and developer operations share the authenticated account transport.
+const Operations = {
+    status: null, root: null, open: false, page: 'feedback', busy: false, timer: null, pollGeneration: 0, submission: 0, developerLogin: false,
+    init() {
+        if(typeof document.body.appendChild!=='function')return;
+        this.root=document.createElement('section');this.root.id='game-operations';
+        this.root.style.display='none';
+        this.root.setAttribute('aria-modal','true');
+        this.root.setAttribute('role','dialog');this.root.setAttribute('aria-label','Retrograde operations');
+        document.body.appendChild(this.root);
+        for(const type of ['keydown','keyup','click','pointerdown','pointerup']){
+            this.root.addEventListener(type,e=>e.stopPropagation());
+            document.addEventListener(type,e=>{if(this.open&&!this.root.contains(e.target)){e.preventDefault();e.stopImmediatePropagation();}},true);
+        }
+        this.root.addEventListener('submit',e=>{e.preventDefault();this.submit(e.target);});
+        this.root.addEventListener('keydown',e=>{
+            if(e.key==='Escape'&&!this.busy){e.preventDefault();this.hide();return;}
+            if(e.key!=='Tab')return;
+            const items=[...this.root.querySelectorAll('input,textarea,select,button')].filter(item=>!item.disabled&&!item.hidden&&item.getClientRects().length);
+            if(!items.length)return;
+            if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items.at(-1).focus();}
+            else if(!e.shiftKey&&document.activeElement===items.at(-1)){e.preventDefault();items[0].focus();}
+        });
+        this.root.addEventListener('click',e=>{
+            const action=e.target.closest('[data-ops]')?.dataset.ops;if(!action)return;
+            if(action==='close')this.hide();else if(action==='retry'){
+                const notice=this.root.querySelector('[data-result]');notice.textContent='Checking server status...';
+                this.poll().then(()=>{if(this.open&&this.page==='maintenance')notice.textContent=this.networkOffline?'Could not reach the server. Try again when connected.':'Maintenance is still active. Status updates automatically.';});
+            }else if(action==='login'){
+                this.developerLogin=true;this.open=false;this.root.style.display='none';CloudUI.show('login');
+            }else this.show(action);
+        });
+        window.addEventListener('online',()=>this.poll());
+        window.addEventListener('offline',()=>{this.networkOffline=true;ReplayRecorder.markOffline();});
+        this.poll();
+    },
+    locked(){return Boolean(this.status?.active&&!this.status?.developer);},
+    reset(){
+        this.status=this.status?{...this.status,developer:false,unread:null}:null;this.open=false;this.busy=false;
+        if(this.root){this.root.style.display='none';this.root.replaceChildren();}
+        if(this.locked())this.show('maintenance');
+    },
+    async poll(){
+        clearTimeout(this.timer);
+        const generation=++this.pollGeneration,serial=CloudAccount.serial;
+        try{
+            const status=await CloudAccount.request('server-status',{auth:Boolean(CloudAccount.session)});
+            if(serial!==CloudAccount.serial||generation!==this.pollGeneration)return;
+            const changed=JSON.stringify(this.status?.active)!==JSON.stringify(status.active);
+            this.networkOffline=false;this.status=status;this.clockOffset=Date.parse(status.serverTime)-Date.now();this.refreshStatus();
+            if(this.locked()){
+                interruptGameplay();if(ReplayPlayer.active)ReplayPlayer.paused=true;flushSessionSave();
+                if(!this.open||this.page!=='maintenance'||changed)this.show('maintenance');
+            }else{
+                this.developerLogin=false;
+                if(!this.status.active&&CloudAccount.maintenancePending&&CloudAccount.session&&state==='menu'&&!ReplayPlayer.active){
+                    CloudAccount.maintenancePending=false;
+                    CloudAccount.connectSession(CloudAccount.session).catch(error=>CloudAccount.showError(error));
+                }
+                if(this.open&&this.page==='maintenance'){
+                    this.hide();
+                    if(!CloudAccount.session&&!CloudUI.guestChosen)CloudUI.show('start');
+                }
+            }
+        }catch{if(serial===CloudAccount.serial&&generation===this.pollGeneration){this.networkOffline=true;ReplayRecorder.markOffline();}/* Keep any known maintenance lock. */}
+        finally{if(generation===this.pollGeneration)this.timer=setTimeout(()=>this.poll(),30000);}
+    },
+    refreshStatus(){
+        const current=this.root?.querySelector('[data-current-status]');
+        if(current)current.textContent=this.status?.active?'Maintenance active: '+this.status.active.message:'Server open';
+        const next=this.root?.querySelector('[data-next-window]');
+        if(next)next.textContent=this.status?.upcoming?'Next maintenance: '+new Date(this.status.upcoming.starts_at).toLocaleString():'No maintenance is scheduled.';
+    },
+    update(){
+        const next=this.status?.upcoming;
+        if(next&&Date.now()+(this.clockOffset||0)>=Date.parse(next.starts_at)&&(!next.ends_at||Date.now()+(this.clockOffset||0)<Date.parse(next.ends_at))){
+            this.status.active=next;this.status.upcoming=null;
+            if(this.locked()){interruptGameplay();if(ReplayPlayer.active)ReplayPlayer.paused=true;flushSessionSave();this.show('maintenance');}
+        }
+    },
+    drawNotice(){
+        const next=this.status?.upcoming;if(!next)return;
+        const seconds=Math.ceil((Date.parse(next.starts_at)-Date.now()-(this.clockOffset||0))/1000);
+        if(seconds<0||seconds>next.warning_seconds)return;
+        ctx.save();ctx.font='14px monospace';ctx.textAlign='center';ctx.fillStyle='#ffce86';
+        ctx.fillText(fitMenuText(`Maintenance in ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')} — ${next.message}`,GAME_WIDTH-80),GAME_WIDTH/2,38);ctx.restore();
+    },
+    drawMenuNotice(){
+        const message=this.status?.announcement?.message;if(typeof message!=='string'||!message.trim())return;
+        ctx.save();ctx.font='18px monospace';ctx.fillStyle='#9bd9d3';ctx.textAlign='right';ctx.shadowBlur=0;
+        const lines=[''];
+        for(const word of message.trim().split(/\s+/)){
+            const last=lines.length-1,next=lines[last]?lines[last]+' '+word:word;
+            if(ctx.measureText(next).width>420&&lines[last]&&lines.length<3)lines.push(word);
+            else lines[last]=next;
+        }
+        lines.forEach((line,index)=>ctx.fillText(fitMenuText(line,420),1080,78+index*23));ctx.restore();
+    },
+    show(page='feedback'){
+        if(!this.root)return;
+        if(page==='maintenance'){
+            if(this.developerLogin&&CloudUI.open)return;
+            CloudUI.hide(true);this.root.inert=false;
+        }
+        this.page=page;this.open=true;this.root.style.display='grid';this.root.dataset.page=page;
+        if(state!=='menu')interruptGameplay();
+        this.root.replaceChildren();
+        const panel=document.createElement('div');panel.className='ops-panel';this.root.appendChild(panel);
+        const header=document.createElement('header');header.className='ops-header';panel.appendChild(header);
+        const brand=document.createElement('p');brand.className='ops-brand';brand.textContent='RETROGRADE';header.appendChild(brand);
+        const heading=document.createElement('h1');heading.textContent=page==='maintenance'?'SERVER MAINTENANCE':page==='developer'?'DEVELOPER':'FEEDBACK';header.appendChild(heading);
+        const notice=document.createElement('p');notice.dataset.result='';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');notice.className='ops-result';panel.appendChild(notice);
+        if(page==='maintenance'){
+            const body=document.createElement('main');body.className='ops-maintenance-body';panel.appendChild(body);
+            const label=document.createElement('p');label.className='ops-maintenance-label';label.textContent='ONLINE SERVICES TEMPORARILY PAUSED';body.appendChild(label);
+            const p=document.createElement('p');p.className='ops-maintenance-message';p.textContent=this.status.active.message;body.appendChild(p);
+            const end=document.createElement('p');end.className='ops-maintenance-return';end.textContent=this.status.active.ends_at?'Expected return: '+new Date(this.status.active.ends_at).toLocaleString():'No return time has been announced yet.';body.appendChild(end);
+            const kept=document.createElement('p');kept.className='ops-maintenance-help';kept.textContent='Your progress is kept on this device. Any active run stays paused until maintenance ends and you resume it.';body.appendChild(kept);
+            const actions=document.createElement('footer');actions.className='ops-maintenance-actions';panel.appendChild(actions);
+            const retry=document.createElement('button');retry.type='button';retry.textContent='CHECK STATUS';retry.className='ops-primary';retry.dataset.ops='retry';
+            const login=document.createElement('button');login.type='button';login.textContent='DEVELOPER SIGN IN';login.dataset.ops='login';actions.append(retry,login);
+            actions.appendChild(notice);retry.focus();return;
+        }
+        const close=document.createElement('button');close.type='button';close.textContent='BACK';close.className='ops-back';close.dataset.ops='close';header.appendChild(close);
+        if(page==='feedback'){
+            if(!CloudAccount.session){notice.textContent='Log in to submit account-linked feedback.';return;}
+            const intro=document.createElement('p');intro.className='ops-intro';intro.textContent='Report a problem or share an idea. Your feedback is linked to your account.';panel.appendChild(intro);
+            const form=document.createElement('form');form.dataset.command='feedback-submit';form.className='ops-feedback-form';
+            const label=document.createElement('label');label.textContent='YOUR FEEDBACK';
+            const text=document.createElement('textarea');text.setAttribute('aria-label','Your feedback');text.name='body';text.required=true;text.maxLength=500;text.rows=5;text.placeholder='Feedback (250 characters maximum)';
+            label.appendChild(text);const counter=document.createElement('p');counter.className='ops-counter';counter.textContent='0 / 250';text.addEventListener('input',()=>counter.textContent=`${[...text.value.trim()].length} / 250`);
+            const send=document.createElement('button');send.textContent='SEND FEEDBACK';send.className='ops-primary';form.append(label,counter,send);panel.appendChild(form);text.focus();return;
+        }
+        if(!this.status?.developer){notice.textContent='Sign in to an authorized developer account.';return;}
+        const statusBar=document.createElement('div');statusBar.className='ops-server-status';panel.appendChild(statusBar);
+        const info=document.createElement('p');info.dataset.currentStatus='';info.textContent=this.status.active?'Maintenance active: '+this.status.active.message:'Server open';statusBar.appendChild(info);
+        const next=document.createElement('p');next.dataset.nextWindow='';statusBar.appendChild(next);this.refreshStatus();
+        const timezone=document.createElement('p');timezone.className='ops-timezone';timezone.textContent='Times shown in '+Intl.DateTimeFormat().resolvedOptions().timeZone;panel.appendChild(timezone);
+        const form=document.createElement('form');form.dataset.command='developer';form.className='ops-developer-form';
+        const command=document.createElement('select');command.name='command';command.hidden=true;
+        for(const [value,label] of [['dashboard','View maintenance and unread count'],['feedback-list','View feedback'],['maintenance-save','Save maintenance window'],['feedback-update','Update feedback'],['version-save','Update allowed version'],['maintenance-archive','Remove maintenance window'],['announcement-get','Load menu notice'],['announcement-save','Save menu notice']]){
+            const option=document.createElement('option');option.value=value;option.textContent=label;command.appendChild(option);
+        }
+        const tabs=document.createElement('nav');tabs.className='ops-tabs';tabs.setAttribute('aria-label','Developer sections');panel.appendChild(tabs);
+        for(const [value,label] of [['dashboard','OVERVIEW'],['feedback-list','FEEDBACK'],['maintenance-save','MAINTENANCE'],['version-save','VERSIONS'],['announcement-get','NOTICE']]){
+            const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.command=value;
+            button.addEventListener('click',()=>{command.value=value;command.dispatchEvent(new Event('change'));this.root.querySelector('[data-output]')?.replaceChildren();notice.textContent='';});tabs.appendChild(button);
+        }
+        const fields=document.createElement('div');fields.className='ops-fields';
+        const field=(name,label,type='text',value='')=>{
+            const wrap=document.createElement('label');wrap.textContent=label+' ';
+            const input=document.createElement(type==='textarea'?'textarea':'input');input.name=name;if(type==='hidden')wrap.hidden=true;
+            if(type==='checkbox')wrap.className='ops-checkbox';if(type==='textarea')wrap.className='ops-wide';
+            if(type!=='textarea')input.type=type;input.value=value;wrap.appendChild(input);fields.appendChild(wrap);return input;
+        };
+        const choice=(name,label,options,optional=false)=>{
+            const wrap=document.createElement('label');wrap.textContent=label;
+            const select=document.createElement('select');select.name=name;
+            for(const [value,text] of [...(optional?[['','Any status']]:[]),...options]){const option=document.createElement('option');option.value=value;option.textContent=text;select.appendChild(option);}
+            wrap.appendChild(select);fields.appendChild(wrap);return select;
+        };
+        const statuses=[['new','New'],['planned','Planned'],['in_progress','In progress'],['resolved','Resolved'],['dismissed','Dismissed']];
+        const refresh=()=>{
+            fields.replaceChildren();fields.oninput=null;
+            const active=command.value==='announcement-save'?'announcement-get':command.value==='feedback-update'?'feedback-list':command.value;
+            for(const tab of tabs.children)tab.setAttribute('aria-pressed',String(tab.dataset.command===active));
+            form.dataset.view=command.value;
+            send.textContent=command.value==='dashboard'?'LOAD OVERVIEW':command.value==='feedback-list'?'LOAD FEEDBACK':command.value==='feedback-update'?'SAVE FEEDBACK':command.value==='version-save'?'SAVE VERSION':'SAVE WINDOW';
+            if(command.value==='announcement-get'){
+                send.textContent='LOAD NOTICE';const summary=document.createElement('p');summary.textContent='Load the menu notice to edit it, choose versions, or turn it off.';fields.appendChild(summary);
+            }else if(command.value==='announcement-save'){
+                send.textContent='SAVE NOTICE';field('revision','Revision','hidden','1');
+                const message=field('message','Menu note (160 characters maximum)','textarea');message.maxLength=160;
+                field('enabled','Show this notice','checkbox');
+                const audience=choice('audience','Show to',[['all','All versions'],['older','Versions older than'],['exact','Only this version']]);
+                const version=field('version','Version','text','2.1.0');
+                const updateVersion=()=>{version.parentElement.hidden=audience.value==='all';};audience.addEventListener('change',updateVersion);updateVersion();
+                const help=document.createElement('p');help.className='ops-wide';help.textContent='For an upgrade note, choose Versions older than and enter the released version. Older downloaded builds need notice support to display it.';fields.appendChild(help);
+            }else if(command.value==='dashboard'){
+                const summary=document.createElement('p');summary.className='ops-empty';summary.textContent='Load scheduled maintenance, competitive versions and unread feedback.';fields.appendChild(summary);
+            }else if(command.value==='maintenance-save'){
+                field('id','Window','hidden');field('revision','Revision','hidden','1');
+                const start=field('starts_at','Start (local time)','datetime-local');start.required=true;start.setAttribute('aria-label','Start (local time)');
+                const controls=document.createElement('div');controls.className='ops-start-control';start.parentElement.appendChild(controls);
+                const asap=document.createElement('button');asap.type='button';asap.textContent='ASAP';asap.setAttribute('aria-pressed','false');
+                controls.append(start,asap);
+                asap.addEventListener('click',()=>{
+                    const selected=start.dataset.asap!=='true';start.dataset.asap=String(selected);start.disabled=selected;
+                    asap.setAttribute('aria-pressed',String(selected));if(!selected)start.focus();fields.oninput?.();
+                });
+                field('ends_at','End (optional, local time)','datetime-local');
+                field('message','Message players see','textarea');field('warning_seconds','Advance warning in seconds','number','600');
+                field('cancelled','Cancel this window','checkbox').disabled=true;
+                const preview=document.createElement('p');preview.className='ops-preview ops-wide';preview.setAttribute('role','status');
+                fields.oninput=()=>{const values=this.formData(form);preview.textContent=(values.start_asap?'Starts as soon as you save. Advance warnings are skipped. ':'')+'Player preview: '+(values.message||'Enter a maintenance message')+(values.ends_at?' Expected return: '+new Date(values.ends_at).toLocaleString():' No end time has been announced.');};
+                fields.appendChild(preview);queueMicrotask(()=>fields.oninput?.());
+            }else if(command.value==='maintenance-archive'){
+                field('id','Window','hidden');field('revision','Revision','hidden','1');
+                const summary=document.createElement('p');summary.className='ops-empty';summary.textContent='Remove this window from the list. The audit history is kept.';fields.appendChild(summary);
+                send.textContent='REMOVE WINDOW';
+            }else if(command.value==='feedback-list'){
+                choice('sort','Sort feedback',[['newest','Newest first'],['oldest','Oldest first'],['unread','Unread first'],['status','Status'],['account','Submitting account']]);field('unread','Unread only','checkbox');field('username','Player username (optional)');choice('status','Filter by status',statuses,true);
+            }else if(command.value==='feedback-update'){
+                field('id','Feedback','hidden');field('revision','Revision','hidden','1');choice('status','Feedback status',statuses);
+                field('is_read','Mark read','checkbox');field('notes','Developer notes','textarea');
+            }else if(command.value==='version-save'){
+                field('version','Game version','text','2.1.0');field('allowed','Eligible for competitive submission','checkbox');
+            }
+        };
+        const send=document.createElement('button');send.className='ops-primary';send.type='submit';
+        command.addEventListener('change',refresh);refresh();
+        const actions=document.createElement('div');actions.className='ops-form-actions';actions.append(send);
+        form.append(command,fields,actions);panel.appendChild(form);
+        const result=document.createElement('div');result.dataset.output='';result.className='ops-output';panel.appendChild(result);
+    },
+    renderResult(result){
+        const output=this.root.querySelector('[data-output]');output.replaceChildren();
+        const rows=Array.isArray(result)?result:result.windows||[result];
+        if(result.unread!==undefined){const p=document.createElement('p');p.textContent=`Unread feedback: ${result.unread}`;output.appendChild(p);}
+        if(result.versions){const p=document.createElement('p');p.textContent='Competitive versions: '+result.versions.map(v=>v.version+(v.allowed?' (allowed)':' (blocked)')).join(', ');output.appendChild(p);}
+        if(!rows.length){const p=document.createElement('p');p.textContent='No matching entries.';output.appendChild(p);}
+        for(const row of rows){
+            const card=document.createElement('section');card.className='ops-entry';
+            const text=document.createElement('p');
+            text.textContent=row.singleton&&row.audience?`${row.enabled?'Visible':'Off'}: ${row.message||'(empty notice)'} — ${row.audience==='all'?'All versions':row.audience==='older'?'Older than '+row.version:'Version '+row.version}`:row.body?`${row.username||'Player'}: ${row.body} (${row.status}, ${row.is_read?'read':'unread'})`:
+                row.message?`${new Date(row.starts_at).toLocaleString()} — ${row.message}${row.cancelled?' (cancelled)':''}`:row.conflict?'Changed elsewhere. Reload before editing.':'Saved.';
+            card.appendChild(text);
+            if(row.notes){const p=document.createElement('p');p.textContent='Developer notes: '+row.notes;card.appendChild(p);}
+            if(row.id||(row.singleton&&row.audience)){const edit=document.createElement('button');edit.textContent='Edit';edit.addEventListener('click',()=>{
+                const form=this.root.querySelector('form');form.elements.command.value=row.singleton&&row.audience?'announcement-save':row.body?'feedback-update':'maintenance-save';
+                form.elements.command.dispatchEvent(new Event('change'));
+                for(const [key,value] of Object.entries(row)){
+                    const input=form.elements.namedItem(key);if(!input)continue;
+                    if(input.type==='checkbox'){input.checked=Boolean(value);input.disabled=false;}
+                    else if(input.type==='datetime-local'&&value){const date=new Date(value);input.value=new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
+                    else input.value=value??'';
+                }
+                form.elements.audience?.dispatchEvent(new Event('change'));
+                form.querySelector('[name=message]')?.dispatchEvent(new Event('input',{bubbles:true}));
+            });card.appendChild(edit);}
+            if(row.id&&row.message&&(row.cancelled||(row.ends_at&&Date.parse(row.ends_at)<=Date.now()))){
+                const remove=document.createElement('button');remove.type='button';remove.textContent='DELETE';remove.addEventListener('click',()=>{
+                    const form=this.root.querySelector('form');form.elements.command.value='maintenance-archive';form.elements.command.dispatchEvent(new Event('change'));
+                    form.elements.id.value=row.id;form.elements.revision.value=row.revision;
+                    this.root.querySelector('[data-result]').textContent='Ready to remove. Select REMOVE WINDOW.';form.querySelector('[type=submit]').focus();
+                });card.appendChild(remove);
+            }
+            if(row.id&&row.message&&!row.cancelled){
+                for(const label of ['Cancel window','End now']){
+                    const button=document.createElement('button');button.textContent=label;
+                    button.addEventListener('click',()=>{
+                        card.querySelector('button').click();const form=this.root.querySelector('form');
+                        form.elements.cancelled.checked=true;
+                        this.root.querySelector('[data-result]').textContent=label+' prepared. Save to apply.';
+                        form.querySelector('[type=submit]').focus();
+                    });card.appendChild(button);
+                }
+            }
+            output.appendChild(card);
+        }
+    },
+    hide(){if(this.locked())return;this.open=false;if(this.root){this.root.style.display='none';this.root.replaceChildren();}},
+    formData(form){
+        const data={};
+        for(const input of form.elements){
+            if(!input.name||['password','command'].includes(input.name))continue;
+            if(input.type==='checkbox')data[input.name]=input.checked;
+            else if(input.type==='datetime-local'){
+                if(input.name==='starts_at'&&input.dataset?.asap==='true')data.start_asap=true;
+                else data[input.name]=input.value?new Date(input.value).toISOString():null;
+            }
+            else if(input.value!==''||input.name==='notes'||input.name==='message')data[input.name]=input.type==='number'||input.name==='revision'?Number(input.value):input.value;
+        }
+        return data;
+    },
+    async maintenanceData(form){
+        const data=this.formData(form);
+        if(!data.start_asap)return data;
+        const status=await CloudAccount.request('server-status',{auth:true});
+        const stamp=Date.parse(status.serverTime);
+        if(!Number.isFinite(stamp))throw Error('Could not confirm server time. Please try again.');
+        delete data.start_asap;data.starts_at=new Date(stamp).toISOString();
+        if(data.ends_at&&Date.parse(data.ends_at)<=stamp)throw Error('Choose an end time later than now, or leave it blank.');
+        return data;
+    },
+    async submit(form){
+        if(this.busy)return;this.busy=true;
+        const submission=++this.submission,serial=CloudAccount.serial;
+        const current=()=>submission===this.submission&&serial===CloudAccount.serial&&this.open&&this.root?.contains(form);
+        const message=this.root.querySelector('[data-result]');
+        try{
+            message.textContent='Saving...';let result;
+            if(form.dataset.command==='feedback-submit'){
+                const body=form.elements.body.value.trim();if([...body].length<1||[...body].length>250)throw Error('Use 1–250 characters.');
+                result=await CloudAccount.json('feedback-submit',{body},true);
+                if(!current())return;
+                form.elements.body.value='';form.elements.body.dispatchEvent(new Event('input'));
+            }else{
+                const command=form.elements.command.value;
+                const data=command==='maintenance-save'?await this.maintenanceData(form):this.formData(form);
+                if(!current())return;
+                result=await CloudAccount.json('developer',{command,data},true);
+                if(!current())return;
+                this.renderResult(result);await this.poll();
+            }
+            if(!current())return;
+            message.textContent=result.conflict?'Changed elsewhere. Reload before editing.':'Saved.';
+        }catch(error){if(current()){
+            message.textContent=error.message;
+        }}finally{if(submission===this.submission)this.busy=false;}
+    }
+};
+
+    </script>
+    <script>
 ReplayFormat.init();
 ReplayLibrary.init();
 initSaveSystem();
+ReplayRecorder.recoverCompleted();
 
 // FPS counter
 let _fpsFrames = 0;
 let _fpsTime = 0;
 let _fpsDisplay = 0;
 let globalError = null;
+
+// Render at most 60 frames per second on average, including high-refresh screens.
+// Carry the fractional deadline forward so 144 Hz displays do not fall to 48 FPS.
+const FRAME_INTERVAL = 1000 / 60;
+// Browser vsync timestamps fluctuate around the deadline. Treat a callback within
+// 2 ms as this frame, rather than throwing away an entire display refresh.
+// Keep advancing the original deadline to retain the 60 FPS average cap.
+const FRAME_TOLERANCE = 2;
+let nextFrameTime = null;
+function frameLoop(timestamp) {
+    if (nextFrameTime === null) nextFrameTime = timestamp;
+    if (timestamp + FRAME_TOLERANCE < nextFrameTime) {
+        requestAnimationFrame(frameLoop);
+        return;
+    }
+    const elapsedSlots = Math.floor((timestamp + FRAME_TOLERANCE - nextFrameTime) / FRAME_INTERVAL);
+    nextFrameTime += (elapsedSlots + 1) * FRAME_INTERVAL;
+    gameLoop(timestamp);
+}
 
 function gameLoop(timestamp) {
     if (!lastTime) lastTime = timestamp;
@@ -16107,6 +16898,7 @@ function gameLoop(timestamp) {
         const deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
+        Operations.update();
         CloudBoard.updateLevelInput();
 
         if (ReplayPlayer.active) {
@@ -16114,7 +16906,7 @@ function gameLoop(timestamp) {
             if (document.hidden || deltaTime >= 250) ReplayPlayer.paused = true;
             else ReplayPlayer.advance(Math.max(0, deltaTime));
             ReplayPlayer.draw();
-            requestAnimationFrame(gameLoop);
+            requestAnimationFrame(frameLoop);
             return;
         }
 
@@ -16122,21 +16914,20 @@ function gameLoop(timestamp) {
         if (editor.active && !editor.testing) {
             Simulation.reset(timestamp);
             editor.render();
-            requestAnimationFrame(gameLoop);
+            requestAnimationFrame(frameLoop);
             return;
         }
 
         // Long interruptions pause gameplay instead of dropping simulation time.
         if (document.hidden || deltaTime >= 250) {
-            if (SplitScreen.active) SplitScreen.pause();
-            else if (state === 'playing') isPaused = true;
-            keys = {};
+            interruptGameplay();
         }
         applyRenderScale(saveData.renderScale);
         if (isPaused || document.hidden || deltaTime >= 250) Simulation.reset(timestamp);
         else Simulation.advance(Math.max(deltaTime, 0), timestamp);
         if (typeof MusicSystem !== 'undefined') MusicSystem.setState(SplitScreen.active ? 'playing' : state);
         draw();
+        Operations.drawNotice();
         if(ReplayRecorder.restoring){ctx.font='13px monospace';ctx.fillStyle='#bfeef1';ctx.textAlign='center';ctx.fillText('Checking saved run recording...',GAME_WIDTH/2,30);}
 
         // FPS counter (top-right)
@@ -16154,7 +16945,7 @@ function gameLoop(timestamp) {
             ctx.fillText(`${_fpsDisplay} FPS`, GAME_WIDTH - 10, GAME_HEIGHT - 10);
         }
 
-        requestAnimationFrame(gameLoop);
+        requestAnimationFrame(frameLoop);
     } catch (e) {
         globalError = e;
         ctx.fillStyle = '#000';
@@ -16177,11 +16968,7 @@ function flushSessionSave() {
 window.addEventListener('pagehide', flushSessionSave);
 document.addEventListener?.('visibilitychange', () => {
     if (!document.hidden) return;
-    ReplayRecorder.event('pause');
-    if (ReplayPlayer.active) { ReplayPlayer.paused = true; return; }
-    if (SplitScreen.active) SplitScreen.pause();
-    else if (state !== 'menu') isPaused = true;
-    keys = {}; Simulation.clearInput();
+    interruptGameplay();
     flushSessionSave();
 });
 window.addEventListener('beforeunload', e => {
@@ -16192,8 +16979,9 @@ window.addEventListener('beforeunload', e => {
 applyRenderScale(saveData.renderScale);
 goToMenu();
 CloudUI.init();
+Operations.init();
 if (typeof location !== 'undefined' && location.hash === '#editor') LevelEditor.open();
-requestAnimationFrame(gameLoop);
+requestAnimationFrame(frameLoop);
 
     </script>
 </body>
