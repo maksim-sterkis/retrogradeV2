@@ -1590,6 +1590,11 @@ const SaveStore = {
             !Number.isFinite(envelope.savedAt) || typeof envelope.writer !== 'string') throw new Error('Damaged save snapshot.');
         const payload=this.normalizePayload(envelope.payload);
         if(format==='retrograde-v2-backup'&&envelope.payload.game.competitiveEpoch===V21Upgrade.epoch&&envelope.payload.replays)payload.replays=ReplayLibrary.validateArchive(envelope.payload.replays);
+        if(format==='retrograde-v2-backup'&&envelope.payload.game.competitiveEpoch===V21Upgrade.epoch&&envelope.payload.replayRefs!==undefined){
+            const refs=envelope.payload.replayRefs;
+            if(!Array.isArray(refs)||refs.length>97||refs.some(r=>!r||typeof r.key!=='string'||r.key.length>160||typeof r.digest!=='string'||!/^[a-f0-9]{64}$/.test(r.digest)))throw Error('Invalid recording references.');
+            payload.replayRefs=refs;
+        }
         return { ...envelope, payload, upgraded:envelope.payload.game.competitiveEpoch!==V21Upgrade.epoch };
     },
     readItem(key) {
@@ -1616,7 +1621,7 @@ const SaveStore = {
         return { latest: valid[0] || null, damaged, present, future, legacy };
     },
     init() {
-        let upgraded=false;
+        let upgraded=false, migrated=false;
         const empty = defaultSaveData();
         empty.replayGeneration='v21';
         empty.bestLevels = Array(levels.length).fill(null); empty.bestRTASplits = Array(levels.length).fill(null);
@@ -1625,7 +1630,7 @@ const SaveStore = {
         try {
             const slots = this.readSlots();
             if (slots.latest) {
-                upgraded=slots.latest.upgraded||slots.legacy;
+                upgraded=slots.latest.upgraded; migrated=upgraded||slots.legacy;
                 saveData = slots.latest.payload.game; this.editor = slots.latest.payload.editor;
                 this.sequence = slots.latest.sequence;
                 if (slots.damaged.length) this.notice = 'Recovered the last valid save copy.';
@@ -1640,13 +1645,13 @@ const SaveStore = {
         this.base = cloneSave({ game: saveData, editor: this.editor });
         this.ready = true;
         if (this.blocked) this.status = this.blocked;
-        else if(upgraded){
-            try{if(typeof ReplayRecorder!=='undefined')localStorage.removeItem(ReplayRecorder.pendingKey);}catch{}
-            this.notice='V2.1 reset old times and recordings. Settings and editor work were kept.';
+        else if(migrated){
+            if(upgraded)try{if(typeof ReplayRecorder!=='undefined')localStorage.removeItem(ReplayRecorder.pendingKey);}catch{}
+            if(upgraded)this.notice='Older V2 records on this browser were reset for V2.1. Settings and editor work were kept.';
             if(this.commit()){
                 try{for(const key of this.legacyKeys)localStorage.removeItem(key);}catch{this.notice+=' Old cache cleanup will need a retry.';}
-                const upgradeNotice = 'V2.1 reset old times and recordings. Settings and editor work were kept.';
-                setTimeout(() => { if (this.notice === upgradeNotice) this.notice = ''; }, 8000);
+                if(upgraded){const upgradeNotice = 'Older V2 records on this browser were reset for V2.1. Settings and editor work were kept.';
+                setTimeout(() => { if (this.notice === upgradeNotice) this.notice = ''; }, 8000);}
             }
         }
     },
@@ -1758,8 +1763,10 @@ const SaveStore = {
         } catch (error) { this.editor = before; throw error; }
         finally { this.batchingEditor = false; }
     },
-    backupText() {
+    backupText(includeReplays = false, replayRefs = null) {
         const payload = this.normalizePayload({ game: saveData, editor: this.editor });
+        if (includeReplays) payload.replays = ReplayLibrary.backupArchive();
+        if (replayRefs) payload.replayRefs = replayRefs;
         return JSON.stringify(this.envelope(payload, Math.max(1, this.sequence), 'retrograde-v2-backup'));
     },
     previewBackup(text) {
@@ -1811,10 +1818,10 @@ const SaveStore = {
         loadStatus = 'BACKUP RESTORED';
         return true;
     },
-    async backupFile() {
+    async backupFile(includeReplays = false, replayRefs = null) {
         await ReplayLibrary.ready;
         while(ReplayRecorder.jobs.size)await Promise.all([...ReplayRecorder.jobs]);
-        const text=this.backupText(),raw=new TextEncoder().encode(text);
+        const text=this.backupText(includeReplays,replayRefs),raw=new TextEncoder().encode(text);
         let encoded=raw,codec=0;
         if(typeof CompressionStream!=='undefined'){
             encoded=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());codec=1;
@@ -1837,8 +1844,8 @@ const SaveStore = {
     },
     async downloadBackup() {
         try {
-            loadStatus='Packing save backup. Recordings use separate .rgr files...';
-            const bytes=await this.backupFile();
+            loadStatus='Packing save and recordings...';
+            const bytes=await this.backupFile(true);
             const blob = new Blob([bytes], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob), link = document.createElement('a');
             link.href = url; link.download = `retrograde-v2-backup-${new Date().toISOString().slice(0,10)}.retrograde`;
@@ -15183,10 +15190,11 @@ const ReplayLibrary = {
             tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(Error('Could not clear old recordings. Please retry the upgrade.'));
         });
     },
-    async accept(bytes, origin = 'import') {
+    async accept(bytes, origin = 'import', guard = () => true) {
         await this.ready;
         if(!V21Upgrade.eligibleReplay(ReplayFormat.decode(bytes).header))throw Error('This recording was made on a disallowed game version. Record a new run in V2.1.');
         const checked = await ReplayFormat.verify(bytes);
+        if(!guard())return null;
         const { header } = checked.replay;
         let linked=false;
         if (origin === 'import') {
@@ -15202,6 +15210,7 @@ const ReplayLibrary = {
             const last=this.entries.get('last:campaign');
             if(!last||header.createdAt>=last.createdAt)await this.put('last:campaign',checked);
             for (const metric of ['rta', 'igt']) {
+                if(!guard())return null;
                 const key = `best:campaign:${metric}`, prior = this.entries.get(key);
                 if (!prior || checked[metric] <= prior.replay.header[metric + 'Ticks'] / 120) {
                     const entry=await this.put(key, checked);if(entry)linked=RecordEvidence.bind(entry,saveData,true)||linked;
@@ -15883,6 +15892,7 @@ const CloudAccount = {
     },
     markDirty() {
         if (!this.ready || this.suppress || this.scope==='guest') return;
+        this.changeCounter=(this.changeCounter||0)+1;
         if (!this.firstDirtyAt) this.firstDirtyAt=Date.now();
         this.meta.dirty = true; this.writeMeta();
         this.status = this.session ? 'Saved on this device. Cloud sync pending.' : 'Saved on this device. Log in again to sync.';
@@ -15915,6 +15925,7 @@ const CloudAccount = {
         this.jobTimer=setTimeout(()=>{this.jobTimer=null;if(serial===this.serial)this.sync().catch(()=>{});},15000);
     },
     async switchScope(scope) {
+        this.libraryStored=new Set();
         if(typeof Operations!=='undefined'&&scope!==this.scope)Operations.reset();
         this.maintenancePending=false;
         this.releasePending=false;
@@ -16005,7 +16016,7 @@ const CloudAccount = {
             // A failed/invalid remote restore never uploads default state over it.
             this.conflict = { unavailable: true }; this.status = error.message;
             throw error;
-        } finally { this.suppress = false; }
+        } finally { this.suppress = false; if(this.meta.dirty&&!this.conflict&&!this.pendingGuest)this.scheduleSync(); }
     },
     async bringGuestProgress() {
         if (!this.session || !this.pendingGuest) throw new Error('No guest progress is waiting to transfer.');
@@ -16048,10 +16059,32 @@ const CloudAccount = {
         try {
             const bytes = remote.available ? await this.request('save-file', { auth: true, raw: true, query: { revision: remote.revision, previous: remote.previous ? '1' : '0' } }) : await this.download(remote.url);
             if (!await SaveStore.readBackupFile(bytes.buffer)) throw new Error(loadStatus);
+            const refs=SaveStore.pendingRestore?.replayRefs||[];
             if (!await SaveStore.restoreBackup()) throw new Error(loadStatus);
             this.meta.revision = remote.revision; this.meta.dirty = false; this.firstDirtyAt=0; this.meta.lastSyncedAt=Date.now(); this.writeMeta();
             this.conflict = null; this.status = 'Cloud save loaded. Recordings remain separate on this device.';
+            await this.restoreCloudRecordings(refs);
+            const referenced=new Set(refs.map(r=>`${r.key}:${r.digest}`));
+            if(ReplayLibrary.rows(true).some(e=>!referenced.has(`${e.key}:${ReplayFormat.digest(e.replay.bytes)}`))){this.meta.dirty=true;this.writeMeta();}
         } finally { this.suppress = previousSuppression; }
+    },
+    async restoreCloudRecordings(refs=[]) {
+        const serial=this.serial, available=new Set(ReplayLibrary.rows(true).map(entry=>ReplayFormat.digest(entry.replay.bytes)));
+        const digests=[...new Set([...refs.map(ref=>ref.digest),...Object.values(saveData.recordEvidence||{}).map(link=>link?.digest)].filter(d=>/^[a-f0-9]{64}$/.test(d)&&!available.has(d)))];
+        if(!digests.length)return;
+        try {
+            const recordings=[];for(let i=0;i<digests.length;i+=40){const result=await this.json('own-recordings',{digests:digests.slice(i,i+40)},true);recordings.push(...result.recordings);}
+            if(serial!==this.serial)return;
+            for(const item of recordings){
+                const bytes=await this.download(item.url);
+                if(serial!==this.serial)return;
+                if(!digests.includes(item.digest)||ReplayFormat.digest(bytes)!==item.digest)throw Error('Cloud recording digest mismatch.');
+                const ref=refs.find(r=>r.digest===item.digest&&!r.key.startsWith('import:'))||refs.find(r=>r.digest===item.digest);
+                await ReplayLibrary.accept(bytes,ref?.key?.startsWith('import:')?'import':'cloud',()=>serial===this.serial);
+            }
+            if(recordings.length<digests.length){this.needsAttention=true;this.status='Some recordings are not available in cloud storage; the originals remain on their device.';}
+            else this.status='Cloud save and available recordings loaded.';
+        } catch(error) { if(serial===this.serial){this.needsAttention=true;this.status=`Cloud save loaded; recording recovery failed: ${error.message}`;} }
     },
     async choosePrevious() {
         const remote = await this.request('save', { auth: true, query: { previous: '1' } });
@@ -16081,7 +16114,18 @@ const CloudAccount = {
             if (this.meta.dirty) {
                 this.status = 'Uploading complete cloud save...';
                 this.firstDirtyAt=0;
-                const sequence = SaveStore.sequence, bytes = await SaveStore.backupFile();
+                await ReplayLibrary.ready;while(ReplayRecorder.jobs.size)await Promise.all([...ReplayRecorder.jobs]);
+                const sequence = SaveStore.sequence, changes=this.changeCounter||0, entries=ReplayLibrary.rows(true), refs=[];
+                this.libraryStored ||= new Set();
+                for(const entry of entries){
+                    const digest=ReplayFormat.digest(entry.replay.bytes);refs.push({key:entry.key,digest});
+                    if(this.libraryStored.has(digest))continue;
+                    const saved=await this.request('recording-store',{method:'POST',auth:true,body:entry.replay.bytes,headers:{'Content-Type':'application/octet-stream'}});
+                    if(saved.digest!==digest)throw Error('Cloud recording digest mismatch.');
+                    if(this.scope!==owner||this.serial!==serial)return;
+                    this.libraryStored.add(digest);
+                }
+                const bytes = await SaveStore.backupFile(false,refs);
                 if (bytes.length > CloudConfig.maxBytes) throw new Error('Backup exceeds the 16 MB cloud limit. Your complete local backup remains available.');
                 if (this.scope !== owner || this.serial !== serial) return;
                 try {
@@ -16089,7 +16133,7 @@ const CloudAccount = {
                         headers: { 'Content-Type': 'application/octet-stream', 'If-Match': String(this.meta.revision) } });
                     if (this.scope !== owner || this.serial !== serial) return;
                     this.meta.revision = result.revision;
-                    this.meta.dirty = SaveStore.sequence !== sequence;
+                    this.meta.dirty = SaveStore.sequence !== sequence || (this.changeCounter||0)!==changes;
                     if(!this.meta.dirty)this.firstDirtyAt=0;this.meta.lastSyncedAt=Date.now();
                     this.writeMeta(); this.status = this.meta.dirty ? 'Cloud saved. Newer device changes are pending.' : 'Cloud save is up to date.';
                 } catch (error) {
@@ -16099,7 +16143,7 @@ const CloudAccount = {
                             if(remote.available && remote.revision===this.meta.revision+1){
                                 const stored=await this.request('save-file',{auth:true,raw:true,query:{revision:remote.revision}});
                                 if(ReplayFormat.digest(stored)===ReplayFormat.digest(bytes)){
-                                    this.meta.revision=remote.revision;this.meta.dirty=SaveStore.sequence!==sequence;
+                                    this.meta.revision=remote.revision;this.meta.dirty=SaveStore.sequence!==sequence||(this.changeCounter||0)!==changes;
                                     this.meta.lastSyncedAt=Date.now();if(!this.meta.dirty)this.firstDirtyAt=0;this.writeMeta();error=null;
                                 }
                             }
