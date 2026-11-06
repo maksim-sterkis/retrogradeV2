@@ -1193,11 +1193,11 @@ const ShipCosmetics = {
     layers: {
         middle: [
             { id: 'none', name: 'NONE', clears: 0 },
-            { id: 'split', name: 'SPLIT', clears: 3 },
-            { id: 'stripes', name: 'STRIPES', clears: 5 },
-            { id: 'dots', name: 'DOTS', clears: 8 },
-            { id: 'grid', name: 'GRID', clears: 12 },
-            { id: 'chevrons', name: 'CHEVRONS', clears: 16 }
+            { id: 'split', name: 'SPLIT', clears: 5 },
+            { id: 'stripes', name: 'STRIPES', clears: 11 },
+            { id: 'dots', name: 'DOTS', clears: 18 },
+            { id: 'grid', name: 'GRID', clears: 24 },
+            { id: 'chevrons', name: 'CHEVRONS', clears: 30 }
         ],
         top: [
             { id: 'none', name: 'NONE', clears: 0 },
@@ -1212,7 +1212,7 @@ const ShipCosmetics = {
     legacyRewards: { scout: 'middle:stripes', copper: 'top:line', orbit: 'top:diamond', aurum: 'top:ring' },
 
     defaultSelection() { return { base: 'black', middle: 'none', top: 'none', middleColor: 'white', topColor: 'white' }; },
-    emptySave() { return { version: 2, selected: this.defaultSelection(), cleared: [], unlocked: [] }; },
+    emptySave() { return { version: 2, progressEpoch: 21, selected: this.defaultSelection(), cleared: [], unlocked: [] }; },
     options(layer) { return layer === 'base' ? this.colors : Array.isArray(this.layers[layer]) ? this.layers[layer] : []; },
     get(layer, id) { return this.options(layer).find(item => item.id === id); },
     color(id) { return this.colors.find(color => color.id === id)?.color || '#ffffff'; },
@@ -1247,7 +1247,7 @@ const ShipCosmetics = {
     },
     progress() { return this.courseKeys().filter(key => saveData.cosmetics.cleared.includes(key)).length; },
     isUnlocked(layer, item) {
-        return Boolean(item) && (!item.clears || saveData.cosmetics.unlocked.includes(`${layer}:${item.id}`));
+        return Boolean(item) && (!item.clears || this.progress() >= item.clears);
     },
     canEquip(selected) {
         return this.validSelection(selected) && typeof selected === 'object' &&
@@ -1264,8 +1264,9 @@ const ShipCosmetics = {
         const earned = [], count = this.progress();
         for (const layer of ['middle', 'top']) {
             for (const item of this.options(layer)) {
-                if (item.clears && count >= Math.min(item.clears, levels.length) && !this.isUnlocked(layer, item)) {
-                    saveData.cosmetics.unlocked.push(`${layer}:${item.id}`);
+                if (item.clears && count === item.clears) {
+                    const id = `${layer}:${item.id}`;
+                    if (!saveData.cosmetics.unlocked.includes(id)) saveData.cosmetics.unlocked.push(id);
                     earned.push(item.name);
                 }
             }
@@ -1279,7 +1280,7 @@ const ShipCosmetics = {
             const [layer, item] = id.split(':');
             return this.get(layer, item)?.clears > 0;
         }) : [];
-        const result = { version: 2, selected: this.normalizeSelection(raw?.selected, previous.selected),
+        const result = { version: 2, progressEpoch: 21, selected: this.normalizeSelection(raw?.selected, previous.selected),
             cleared: [...new Set([...previous.cleared, ...cleared])], unlocked: [...new Set([...previous.unlocked, ...unlocked])] };
         if (creditRecords) this.courseKeys().forEach((key, index) => {
             if ((Number.isFinite(data.bestLevels[index]) && data.bestLevels[index] > 0) || index < data.campaignProgress) {
@@ -1290,9 +1291,9 @@ const ShipCosmetics = {
         for (const layer of ['middle', 'top']) {
             for (const item of this.options(layer)) {
                 const id = `${layer}:${item.id}`;
-                if (item.clears && count >= Math.min(item.clears, levels.length) && !result.unlocked.includes(id)) result.unlocked.push(id);
+                if (item.clears && count >= item.clears && !result.unlocked.includes(id)) result.unlocked.push(id);
             }
-            if (this.get(layer, result.selected[layer])?.clears && !result.unlocked.includes(`${layer}:${result.selected[layer]}`)) result.selected[layer] = 'none';
+            if (this.get(layer, result.selected[layer])?.clears > count) result.selected[layer] = 'none';
         }
         return result;
     },
@@ -1472,7 +1473,7 @@ const V21Upgrade = {
         game.campaignProgress = game.casualRTA = game.casualIGT = 0;
         game.casualLayoutValid = game.casualTimingValid = true;
         game.replayGeneration = 'v21';
-        game.cosmetics = {...game.cosmetics,selected:this.appearance()};
+        game.cosmetics = {...game.cosmetics,selected:this.appearance(),cleared:[],unlocked:[],progressEpoch:this.epoch};
         return game;
     },
     eligibleReplay(header) {
@@ -2291,7 +2292,11 @@ function normalizeGameSave(parsed, strict = false) {
     if (RENDER_SCALES.includes(parsed.renderScale)) data.renderScale = parsed.renderScale;
     if (revision < CAMPAIGN_LAYOUT_REVISION) applyCampaignRevision(revision, true, data);
     sanitizeCampaignCheckpoint(data);
-    data.cosmetics = ShipCosmetics.normalized(parsed.cosmetics, !parsed.cosmetics, data);
+    // Early V2.1 saves carried V2 appearance clears forward. Reconstruct their
+    // V2.1 progress from current records once, then keep tracking all clears.
+    const repairAppearance = parsed.competitiveEpoch === V21Upgrade.epoch && parsed.cosmetics?.progressEpoch !== V21Upgrade.epoch;
+    const cosmetics = repairAppearance ? {...parsed.cosmetics,cleared:[],unlocked:[]} : parsed.cosmetics;
+    data.cosmetics = ShipCosmetics.normalized(cosmetics, !parsed.cosmetics || repairAppearance, data);
     // Legacy records have no run trace. Reject contradictory aggregates without
     // inventing a run from individual bests. Incomplete IL tables may be resets.
     const minimum = data.bestLevels.reduce((sum, time) => sum + (time || 0), 0);
@@ -11251,8 +11256,8 @@ function updateSoloFlight(dt) {
 }
 
 function finishSoloLanding() {
-    cosmeticUnlockNotice = '';
     if (landingCommitted) return;
+    cosmeticUnlockNotice = '';
     landingCommitted = true;
     timerRunning = false;
     const recordEligible = cosmeticFlightEligible && !cheatsEnabled && customFinalLevel === null && validRecordTime(timer);
@@ -11874,7 +11879,7 @@ function drawAppearanceMenu() {
         ctx.font = '11px monospace';
         const isEquipped = equipped[cosmeticLayer] === item.id;
         ctx.fillStyle = isEquipped ? '#7edac7' : '#9baebb';
-        const status = !unlocked ? `${Math.min(item.clears, levels.length)} LEVELS` : isEquipped ? 'EQUIPPED' : '';
+        const status = !unlocked ? `LOCKED - ${item.clears} LEVELS` : isEquipped ? 'EQUIPPED' : '';
         if (status) ctx.fillText(status, x + 76, y + height / 2 + 17);
     });
     if (cosmeticLayer !== 'base' && cosmeticPreview[cosmeticLayer] !== 'none') {
