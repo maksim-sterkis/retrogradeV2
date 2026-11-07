@@ -16306,9 +16306,10 @@ const CloudAccount = {
         }
         return [...slots.values()];
     },
-    async sync() {
+    async sync(force = false) {
         if (this.releasePending || this.maintenancePending || !this.session || this.suppress || this.conflict || this.pendingGuest) return;
         if (this.uploading) return this.uploading;
+        if (force && !this.needsAttention) { this.meta.dirty = true; this.writeMeta(); }
         const owner = this.scope, serial = this.serial;
         if(this.timer)clearTimeout(this.timer);this.timer=null;
         let completed = false;
@@ -16680,7 +16681,7 @@ const CloudUI = {
             else if (action === 'bring-guest') this.perform(async () => { await CloudAccount.bringGuestProgress(); if (!this.resumeLeaderboard()) this.show('account'); });
             else if (action === 'start-fresh') this.perform(async () => { await CloudAccount.startFresh(); if (!this.resumeLeaderboard()) this.show('account'); });
             else if (action === 'retry-recordings') this.perform(async () => { await CloudAccount.retryRecordings(); this.show('account'); });
-            else if (action === 'sync') this.perform(async () => { await CloudAccount.sync(); this.show('account'); });
+            else if (action === 'sync') this.perform(async () => { await CloudAccount.sync(true); this.show('account'); });
             else if (action === 'previous') this.perform(async () => { await CloudAccount.choosePrevious(); this.show('account'); });
             else if (action === 'cloud') this.perform(async () => { await CloudAccount.chooseCloud(); if (!this.resumeLeaderboard()) this.show('account'); });
             else if (action === 'device') this.perform(async () => { await CloudAccount.chooseDevice(); if (!this.resumeLeaderboard()) this.show('account'); });
