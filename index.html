@@ -1666,7 +1666,11 @@ const SaveStore = {
                 result.game[key] = local.game[key].map((value, i) => changed(value, base.game[key][i])
                     ? value === null ? null : fasterTime(value, remote.game[key][i]) : remote.game[key][i]);
             } else if (changed(local.game[key], base.game[key])) {
-                result.game[key] = ['bestRTA', 'bestIGT', 'bestTutorial'].includes(key) && local.game[key] !== null
+                const repair=this.recordRepair;
+                if(repair?.field===key && local.game[key]===repair.value){
+                    if(remote.game[key]!==repair.previous && remote.game[key]!==repair.value)throw Error('Record changed in another tab. Reload before repairing.');
+                    result.game[key]=local.game[key];
+                }else result.game[key] = ['bestRTA', 'bestIGT', 'bestTutorial'].includes(key) && local.game[key] !== null
                     ? fasterTime(local.game[key], remote.game[key]) : local.game[key];
             }
         }
@@ -15948,6 +15952,13 @@ const CloudAccount = {
         if (this.uploading) return 'SYNCING';
         return this.hasUnsyncedChanges() || this.pendingRecords().length ? 'PENDING' : 'SYNCED';
     },
+    accountMessage() {
+        if(this.conflict)return this.status||'Cloud and device saves need your choice.';
+        const rejected=Object.values(this.meta.jobs||{}).find(job=>job.state==='rejected');
+        if(rejected)return rejected.error||'A recording needs attention.';
+        if(this.needsAttention)return /attention|failed|could not|not available|error|retry|log in/i.test(this.status)?this.status:'A recording could not be restored. Try signing in again.';
+        return this.status;
+    },
     scheduleJobPoll() {
         if (this.jobTimer) clearTimeout(this.jobTimer);this.jobTimer=null;
         if (!this.session || this.needsAttention || !this.pendingRecords().length) return;
@@ -16153,7 +16164,9 @@ const CloudAccount = {
                             if(!entry)throw Error('Could not link the verified recording.');
                             RecordEvidence.bind(entry,saveData,true);
                             if(!RecordEvidence.matches(saveData.recordEvidence?.[row.metric],checked,saveData[field]))throw Error('Could not link the verified recording.');
-                            if(!storeSaveDataImmediate())throw Error(SaveStore.status);
+                            SaveStore.recordRepair={field,previous,value:checked[row.metric]};
+                            try{if(!storeSaveDataImmediate()||saveData[field]!==checked[row.metric])throw Error(SaveStore.status||'Record repair was not saved.');}
+                            finally{SaveStore.recordRepair=null;}
                         }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
                         this.meta.dirty=true;this.writeMeta();
                     }
@@ -16161,6 +16174,12 @@ const CloudAccount = {
             }
             // A verified IGT replay also contains its RTA (and vice versa).
             // Use that same recording if the other saved time has no replay.
+            // Entries loaded from this browser have not necessarily been checked
+            // yet, even when their bytes are already present locally.
+            for(const entry of ReplayLibrary.rows().filter(e=>!e.key.startsWith('import:')&&!e.checked&&e.replay.header.kind==='campaign')){
+                try{await ReplayLibrary.check(entry);}catch{/* Leave invalid recordings untouched. */}
+                if(serial!==this.serial)return;
+            }
             for(const metric of ['rta','igt']){
                 const field=metric==='rta'?'bestRTA':'bestIGT';
                 if(!validRecordTime(saveData[field])||ReplayLibrary.campaignEntry(metric))continue;
@@ -16175,7 +16194,9 @@ const CloudAccount = {
                 try{
                     saveData[field]=entry.checked[metric];RecordEvidence.bind(entry,saveData,true);
                     if(!RecordEvidence.matches(saveData.recordEvidence?.[metric],entry.checked,saveData[field]))throw Error('Could not link the verified recording.');
-                    if(!storeSaveDataImmediate())throw Error(SaveStore.status);
+                    SaveStore.recordRepair={field,previous,value:entry.checked[metric]};
+                    try{if(!storeSaveDataImmediate()||saveData[field]!==entry.checked[metric])throw Error(SaveStore.status||'Record repair was not saved.');}
+                    finally{SaveStore.recordRepair=null;}
                 }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
                 this.meta.dirty=true;this.writeMeta();
             }
@@ -16685,7 +16706,7 @@ const CloudUI = {
         if (screen === 'account') {
             const name = this.root.querySelector('[data-account-name]'), status = this.root.querySelector('[data-account-status]');
             if (name) name.textContent = CloudAccount.session.username;
-            if (status) status.textContent = CloudAccount.status;
+            if (status) status.textContent = CloudAccount.accountMessage();
             const rejected=this.root.querySelector('[data-rejected]');
             if(rejected)for(const job of Object.values(CloudAccount.meta.jobs||{}).filter(j=>j.state==='rejected')){const p=document.createElement('p');p.textContent=job.error||'Recording rejected.';rejected.appendChild(p);}
         }
