@@ -16159,9 +16159,30 @@ const CloudAccount = {
                     }
                 } catch { failed++; }
             }
+            // A verified IGT replay also contains its RTA (and vice versa).
+            // Use that same recording if the other saved time has no replay.
+            for(const metric of ['rta','igt']){
+                const field=metric==='rta'?'bestRTA':'bestIGT';
+                if(!validRecordTime(saveData[field])||ReplayLibrary.campaignEntry(metric))continue;
+                const candidates=ReplayLibrary.rows().filter(e=>!e.key.startsWith('import:')&&e.checked?.completed&&e.replay.header.kind==='campaign'&&e.persisted!==false);
+                candidates.sort((a,b)=>a.checked[metric]-b.checked[metric]);
+                const entry=candidates[0];if(!entry||serial!==this.serial)continue;
+                const archiveKey=`retrograde_v21_unpaired_${this.scope}`;
+                const archived=JSON.parse(localStorage.getItem(archiveKey)||'[]');
+                if(!Array.isArray(archived))throw Error('Could not preserve the previous record.');
+                archived.push({metric,time:saveData[field],savedAt:Date.now()});localStorage.setItem(archiveKey,JSON.stringify(archived));
+                const previous=saveData[field],previousEvidence=cloneSave(saveData.recordEvidence||{});
+                try{
+                    saveData[field]=entry.checked[metric];RecordEvidence.bind(entry,saveData,true);
+                    if(!RecordEvidence.matches(saveData.recordEvidence?.[metric],entry.checked,saveData[field]))throw Error('Could not link the verified recording.');
+                    if(!storeSaveDataImmediate())throw Error(SaveStore.status);
+                }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
+                this.meta.dirty=true;this.writeMeta();
+            }
             const found=new Set(recordings.map(r=>r.digest));
             const stillMissingCampaign=(validRecordTime(saveData.bestRTA)&&!ReplayLibrary.campaignEntry('rta'))||(validRecordTime(saveData.bestIGT)&&!ReplayLibrary.campaignEntry('igt'));
-            if(failed||digests.some(d=>!found.has(d))||stillMissingCampaign){this.needsAttention=true;this.status='Some recordings could not be restored; the originals remain on their device.';}
+            const stillReferenced=d=>refs.some(r=>r.digest===d)||Object.values(saveData.recordEvidence||{}).some(p=>p?.digest===d);
+            if(failed||digests.some(d=>!found.has(d)&&stillReferenced(d))||stillMissingCampaign){this.needsAttention=true;this.status='Some recordings could not be restored; the originals remain on their device.';}
             else this.status='Cloud save and available recordings loaded.';
         } catch(error) { if(serial===this.serial){this.needsAttention=true;this.status=`Cloud save loaded; recording recovery failed: ${error.message}`;} }
     },
