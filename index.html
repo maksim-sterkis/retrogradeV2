@@ -16004,6 +16004,7 @@ const CloudAccount = {
                 this.conflict = remote; this.status = 'This device and cloud have different saves. Choose which to keep.';
             } else if (this.meta.dirty) {
                 this.status = 'Local changes are ready to sync.';
+                await this.restoreCloudRecordings();
             } else if (remote.available || remote.url) {
                 await this.restoreRemote(remote);
             } else {
@@ -16069,20 +16070,47 @@ const CloudAccount = {
         } finally { this.suppress = previousSuppression; }
     },
     async restoreCloudRecordings(refs=[]) {
-        const serial=this.serial, available=new Set(ReplayLibrary.rows(true).map(entry=>ReplayFormat.digest(entry.replay.bytes)));
-        const digests=[...new Set([...refs.map(ref=>ref.digest),...Object.values(saveData.recordEvidence||{}).map(link=>link?.digest)].filter(d=>/^[a-f0-9]{64}$/.test(d)&&!available.has(d)))];
-        if(!digests.length)return;
-        try {
-            const recordings=[];for(let i=0;i<digests.length;i+=40){const result=await this.json('own-recordings',{digests:digests.slice(i,i+40)},true);recordings.push(...result.recordings);}
-            if(serial!==this.serial)return;
-            for(const item of recordings){
-                const bytes=await this.download(item.url);
+        const serial=this.serial;
+        // Earlier imports are intentionally not record evidence. If one exactly
+        // matches a saved full-run time, verify it before linking it as a run.
+        for(const entry of ReplayLibrary.rows().filter(e=>e.key.startsWith('import:')&&e.replay.header.kind==='campaign')){
+            const h=entry.replay.header;
+            if((validRecordTime(saveData.bestRTA)&&ReplayFormat.ticksEqual(h.rtaTicks,saveData.bestRTA*ReplayFormat.hz)&&!ReplayLibrary.campaignEntry('rta'))||
+               (validRecordTime(saveData.bestIGT)&&ReplayFormat.ticksEqual(h.igtTicks,saveData.bestIGT*ReplayFormat.hz)&&!ReplayLibrary.campaignEntry('igt'))){
+                try{await ReplayLibrary.accept(entry.replay.bytes,'cloud',()=>serial===this.serial);}catch{/* Keep the original imported file. */}
                 if(serial!==this.serial)return;
-                if(!digests.includes(item.digest)||ReplayFormat.digest(bytes)!==item.digest)throw Error('Cloud recording digest mismatch.');
-                const ref=refs.find(r=>r.digest===item.digest&&!r.key.startsWith('import:'))||refs.find(r=>r.digest===item.digest);
-                await ReplayLibrary.accept(bytes,ref?.key?.startsWith('import:')?'import':'cloud',()=>serial===this.serial);
             }
-            if(recordings.length<digests.length){this.needsAttention=true;this.status='Some recordings are not available in cloud storage; the originals remain on their device.';}
+        }
+        const available=new Set(ReplayLibrary.rows(true).map(entry=>ReplayFormat.digest(entry.replay.bytes)));
+        const digests=[...new Set([...refs.map(ref=>ref.digest),...Object.values(saveData.recordEvidence||{}).map(link=>link?.digest)].filter(d=>/^[a-f0-9]{64}$/.test(d)&&!available.has(d)))];
+        const missingCampaign=(validRecordTime(saveData.bestRTA)&&!ReplayLibrary.campaignEntry('rta'))||(validRecordTime(saveData.bestIGT)&&!ReplayLibrary.campaignEntry('igt'));
+        if(!digests.length&&!missingCampaign)return;
+        try {
+            const recordings=[],campaign=[];
+            for(let i=0;i<Math.max(1,Math.ceil(digests.length/40));i++){
+                const result=await this.json('own-recordings',{digests:digests.slice(i*40,i*40+40),campaign:missingCampaign&&i===0},true);
+                recordings.push(...result.recordings);campaign.push(...(result.campaign||[]));
+            }
+            for(const row of campaign){
+                const time=row.metric==='rta'?saveData.bestRTA:row.metric==='igt'?saveData.bestIGT:null;
+                if(validRecordTime(time)&&ReplayFormat.ticksEqual(row.ticks,time*ReplayFormat.hz)&&!available.has(row.digest)&&!recordings.some(r=>r.digest===row.digest))recordings.push(row);
+            }
+            if(serial!==this.serial)return;
+            let failed=0;
+            for(const item of recordings){
+                try {
+                    const bytes=await this.download(item.url);
+                    if(serial!==this.serial)return;
+                    if(ReplayFormat.digest(bytes)!==item.digest)throw Error('Cloud recording digest mismatch.');
+                    const ref=refs.find(r=>r.digest===item.digest&&!r.key.startsWith('import:'))||refs.find(r=>r.digest===item.digest);
+                    const linked=campaign.some(r=>r.digest===item.digest)||Object.values(saveData.recordEvidence||{}).some(p=>p?.digest===item.digest);
+                    const checked=await ReplayLibrary.accept(bytes,ref?.key?.startsWith('import:')&&!linked?'import':'cloud',()=>serial===this.serial);
+                    if(!checked) return;
+                } catch { failed++; }
+            }
+            const found=new Set(recordings.map(r=>r.digest));
+            const stillMissingCampaign=(validRecordTime(saveData.bestRTA)&&!ReplayLibrary.campaignEntry('rta'))||(validRecordTime(saveData.bestIGT)&&!ReplayLibrary.campaignEntry('igt'));
+            if(failed||digests.some(d=>!found.has(d))||stillMissingCampaign){this.needsAttention=true;this.status='Some recordings could not be restored; the originals remain on their device.';}
             else this.status='Cloud save and available recordings loaded.';
         } catch(error) { if(serial===this.serial){this.needsAttention=true;this.status=`Cloud save loaded; recording recovery failed: ${error.message}`;} }
     },
