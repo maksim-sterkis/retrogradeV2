@@ -1245,7 +1245,17 @@ const ShipCosmetics = {
         }
         return this._courseKeys;
     },
-    progress() { return this.courseKeys().filter(key => saveData.cosmetics.cleared.includes(key)).length; },
+    progress() {
+        const cleared = saveData.cosmetics.cleared;
+        const key = `${cleared.length}:${cleared[0] || ''}:${cleared[cleared.length - 1] || ''}`;
+        if (this._progressKey !== key || this._progressRef !== cleared) {
+            this._progressRef = cleared;
+            this._progressKey = key;
+            const set = new Set(cleared);
+            this._progressValue = this.courseKeys().filter(k => set.has(k)).length;
+        }
+        return this._progressValue;
+    },
     isUnlocked(layer, item) {
         return Boolean(item) && (!item.clears || this.progress() >= item.clears);
     },
@@ -11993,12 +12003,14 @@ function drawGameScene(ctx, canvas, scene) {
     const { level: currentLevel, camera, zones: activeZones, items: activeItems,
         parallax: parallaxLayers, dust: ambientDust, particles, player, state, timer,
         thrusterFlicker = 0, menuShip = { active: false } } = scene;
-    const obstacles = renderFlightObstacles(scene.obstacles, scene.phaseTime);
+    const obstacles = state !== 'menu' ? renderFlightObstacles(scene.obstacles, scene.phaseTime) : [];
     if (scene.background !== false) drawGameBackdrop(ctx, canvas, currentLevel, parallaxLayers, camera);
 
     ctx.save();
     let renderCamX = camera.x + (camera.shakeX || 0);
     let renderCamY = camera.y + (camera.shakeY || 0);
+    const viewRight = renderCamX + canvas.width;
+    const viewBottom = renderCamY + canvas.height;
     ctx.translate(-renderCamX, -renderCamY);
 
     // Viewport-culled dot grid: only draw dots visible on screen
@@ -12016,6 +12028,7 @@ function drawGameScene(ctx, canvas, scene) {
     // Render AoE Zones Backgrounds & Wind/Portal Effects
     if (state !== 'menu' && activeZones.length > 0) {
         for (let zone of activeZones) {
+            if (zone.x + zone.w < renderCamX || zone.x > viewRight || zone.y + zone.h < renderCamY || zone.y > viewBottom) continue;
             ctx.fillStyle = zone.color || 'rgba(255, 255, 255, 0.1)';
             ctx.fillRect(zone.x, zone.y, zone.w, zone.h);
 
@@ -12166,21 +12179,22 @@ if (state !== 'menu') {
     }
 
     // Rendering Custom Arbitrary Polygons
+    const visibleObstacles = obstacles.filter(obs => !obs.aabb || (obs.aabb.maxX >= renderCamX - 4 && obs.aabb.minX <= viewRight + 4 && obs.aabb.maxY >= renderCamY - 4 && obs.aabb.minY <= viewBottom + 4));
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 2;
-    for (let obs of obstacles) {
-        ctx.beginPath();
+    ctx.beginPath();
+    for (let obs of visibleObstacles) {
         ctx.moveTo(obs.vertices[0].x, obs.vertices[0].y);
         for (let i = 1; i < obs.vertices.length; i++) {
             ctx.lineTo(obs.vertices[i].x, obs.vertices[i].y);
         }
         ctx.closePath();
-        ctx.stroke();
     }
+    ctx.stroke();
 
     if (typeof window.cachedPatterns === 'undefined') window.cachedPatterns = {};
 
-    for (let obs of obstacles) {
+    for (let obs of visibleObstacles) {
         let pType = obs.texture;
         if (!pType) {
             pType = currentLevel.theme?.parallaxType;
@@ -12283,17 +12297,16 @@ if (state !== 'menu') {
                         
                         // Corner Rivets
                         ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                        
-                        const drawRivet = (rx, ry) => {
-                            ctx.beginPath();
+                        ctx.beginPath();
+                        const addRivet = (rx, ry) => {
+                            ctx.moveTo(rx + 2.5, ry);
                             ctx.arc(rx, ry, 2.5, 0, Math.PI * 2);
-                            ctx.fill();
                         };
-                        
-                        drawRivet(cx + 12, cy + 12);
-                        drawRivet(cx + w - 12, cy + 12);
-                        drawRivet(cx + 12, cy + h - 12);
-                        drawRivet(cx + w - 12, cy + h - 12);
+                        addRivet(cx + 12, cy + 12);
+                        addRivet(cx + w - 12, cy + 12);
+                        addRivet(cx + 12, cy + h - 12);
+                        addRivet(cx + w - 12, cy + h - 12);
+                        ctx.fill();
                     }
                 }
             }
@@ -12780,35 +12793,46 @@ function drawGameBackdrop(ctx, canvas, currentLevel, parallaxLayers, camera) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (currentLevel.theme && currentLevel.theme.parallaxType) {
+        let renderCamX = camera.x + (camera.shakeX || 0);
+        let renderCamY = camera.y + (camera.shakeY || 0);
+        const viewW = canvas.width;
+        const viewH = canvas.height;
         for (let layer of parallaxLayers) {
             ctx.fillStyle = layer.color;
 
-            let renderCamX = camera.x + (camera.shakeX || 0);
-            let renderCamY = camera.y + (camera.shakeY || 0);
             let offsetX = ((renderCamX * layer.speed) % layer.loopWidth + layer.loopWidth) % layer.loopWidth;
             let offsetY = renderCamY * layer.speed;
+            let transY = -offsetY;
 
+            ctx.beginPath();
+            let hasPath = false;
             for (let i = -1; i <= 2; i++) {
                 let transX = -offsetX + (i * layer.loopWidth);
-                let transY = -offsetY;
-                ctx.translate(transX, transY);
+                if (transX + layer.loopWidth + 600 < 0 || transX > viewW + 600) continue;
                 for (let s of layer.shapes) {
                     if (s.type === 'peak') {
-                        ctx.beginPath();
-                        ctx.moveTo(s.x, s.y);
-                        ctx.lineTo(s.x + s.w / 2, s.y - s.h);
-                        ctx.lineTo(s.x + s.w, s.y);
-                        ctx.fill();
+                        const sx = s.x + transX;
+                        if (sx + s.w < 0 || sx > viewW) continue;
+                        const sy = s.y + transY;
+                        ctx.moveTo(sx, sy);
+                        ctx.lineTo(sx + s.w / 2, sy - s.h);
+                        ctx.lineTo(sx + s.w, sy);
+                        ctx.closePath();
+                        hasPath = true;
                     } else if (s.type === 'rect') {
-                        ctx.fillRect(s.x, s.y, s.w, s.h);
+                        const sx = s.x + transX, sy = s.y + transY;
+                        if (sx + s.w < 0 || sx > viewW || sy + s.h < 0 || sy > viewH) continue;
+                        ctx.fillRect(sx, sy, s.w, s.h);
                     } else if (s.type === 'star') {
-                        ctx.beginPath();
-                        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-                        ctx.fill();
+                        const sx = s.x + transX, sy = s.y + transY;
+                        if (sx + s.r < 0 || sx - s.r > viewW || sy + s.r < 0 || sy - s.r > viewH) continue;
+                        ctx.moveTo(sx + s.r, sy);
+                        ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+                        hasPath = true;
                     }
                 }
-                ctx.translate(-transX, -transY);
             }
+            if (hasPath) ctx.fill();
         }
     }
 
@@ -14869,7 +14893,9 @@ const RecordEvidence = {
         return {version:1,value,digest:checked.digest,courseDigest:checked.courseDigest,rules:checked.rules,physics:checked.physics};
     },
     matches(proof,checked,value) {
-        return proof&&canonicalSave(proof)===canonicalSave(this.descriptor(checked,value));
+        return Boolean(proof&&proof.version===1&&proof.value===value&&proof.digest===checked.digest&&
+            proof.courseDigest===checked.courseDigest&&proof.rules===checked.rules&&proof.physics===checked.physics&&
+            Object.keys(proof).length===6);
     },
     bind(entry,game=saveData,replace=false) {
         if(!entry.checked||!V21Upgrade.eligibleReplay(entry.replay.header)||entry.key.startsWith('import:'))return false;
@@ -14880,12 +14906,53 @@ const RecordEvidence = {
             const prior=game.recordEvidence[record];
             if(!prior||replace){
                 const next=this.descriptor(entry.checked,value);
-                if(canonicalSave(prior)!==canonicalSave(next)){game.recordEvidence[record]=next;changed=true;}
+                if(!this.matches(prior,entry.checked,value)){game.recordEvidence[record]=next;changed=true;}
             }
         }
         return changed;
     }
 };
+
+{
+    const rawCourse = ReplayFormat.course.bind(ReplayFormat);
+    const rawCourseDigest = ReplayFormat.courseDigest.bind(ReplayFormat);
+    const rawDigest = ReplayFormat.digest.bind(ReplayFormat);
+    const courseCache = new WeakMap();
+    const digestCache = new WeakMap();
+    const sourceSignature = source => `${source.width}:${source.height}:${source.startX}:${source.startY}:${source.zeroGravity}:${source.fuelCapacity}:${source.safePads?.length}:${source.obstacles?.length}:${source.movingObstacles?.length}:${source.rotatingObstacles?.length}:${source.zones?.length}:${source.items?.length}`;
+    const getCourseEntry = source => {
+        if (!source || typeof source !== 'object') return null;
+        const sig = sourceSignature(source);
+        let entry = courseCache.get(source);
+        if (!entry || entry.sig !== sig) {
+            entry = { sig, course: undefined, digest: undefined };
+            courseCache.set(source, entry);
+        }
+        return entry;
+    };
+    ReplayFormat.course = function(source) {
+        const entry = getCourseEntry(source);
+        if (!entry) return rawCourse(source);
+        if (entry.course === undefined) entry.course = rawCourse(source);
+        return entry.course;
+    };
+    ReplayFormat.courseDigest = function(source) {
+        const entry = getCourseEntry(source);
+        if (!entry) return rawCourseDigest(source);
+        if (entry.digest === undefined) entry.digest = rawCourseDigest(source);
+        return entry.digest;
+    };
+    ReplayFormat.digest = function(bytes) {
+        if (!(bytes instanceof Uint8Array) || bytes.byteLength < 64) return rawDigest(bytes);
+        const len = bytes.byteLength;
+        const sig = `${len}:${bytes[0]}:${bytes[len >> 1]}:${bytes[len - 4]}:${bytes[len - 3]}:${bytes[len - 2]}:${bytes[len - 1]}`;
+        const cached = digestCache.get(bytes);
+        if (cached && cached.sig === sig) return cached.digest;
+        const digest = rawDigest(bytes);
+        digestCache.set(bytes, { sig, digest });
+        return digest;
+    };
+}
 
 const ReplayRecorder = {
     current: null, campaign: null, ghost: null, jobs: new Set(), status: '', lastCreated: 0,
@@ -16302,9 +16369,10 @@ const CloudAccount = {
         const sent = new Set(this.meta.published);
         return ReplayLibrary.rows().some(entry =>
             (entry.key.startsWith('best:') || entry.key === 'last:campaign') &&
-            entry.replay.header.onlineEligible!==false && entry.checked?.completed && ['flight', 'campaign'].includes(entry.replay.header.kind) &&
-            entry.replay.header.segments[0].level >= 0 && V21Upgrade.eligibleReplay(entry.replay.header) && !ReplayFormat.compatibility(entry.replay) &&
-            !sent.has(entry.checked.digest) && !this.meta.jobs?.[entry.checked.digest]);
+            entry.replay.header.onlineEligible!==false && entry.checked?.completed &&
+            !sent.has(entry.checked.digest) && !this.meta.jobs?.[entry.checked.digest] &&
+            ['flight', 'campaign'].includes(entry.replay.header.kind) &&
+            entry.replay.header.segments[0].level >= 0 && V21Upgrade.eligibleReplay(entry.replay.header) && !ReplayFormat.compatibility(entry.replay));
     },
     async publishRecords() {
         const serial=this.serial,sent=new Set(this.meta.published);
@@ -16323,9 +16391,9 @@ const CloudAccount = {
         for(const entry of ReplayLibrary.rows()){
             if(serial!==this.serial)return;
             if(!entry.key.startsWith('best:')&&entry.key!=='last:campaign')continue;
+            const digest=entry.checked?.digest;
+            if(!digest||sent.has(digest)||this.meta.jobs[digest])continue;
             if(entry.replay.header.onlineEligible===false||!V21Upgrade.eligibleReplay(entry.replay.header)||!entry.checked?.completed||!['flight','campaign'].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level<0||ReplayFormat.compatibility(entry.replay))continue;
-            const digest=entry.checked.digest;
-            if(sent.has(digest)||this.meta.jobs[digest])continue;
             if(this.pendingRecords().length>=2)break;
             try{
                 const result=await this.request('submit',{method:'POST',auth:true,body:entry.replay.bytes,headers:{'Content-Type':'application/octet-stream'}});
@@ -16431,8 +16499,9 @@ const CloudBoard = {
     },
     updateLevelInput() {
         const input = this.levelInput; if (!input) return;
-        input.hidden = state !== 'menu' || menuScreen !== 'leaderboards' || this.kind !== 'flight' || CloudUI.open || ReplayPlayer.active || LevelEditor.active;
-        if (input.hidden) return;
+        const hidden = state !== 'menu' || menuScreen !== 'leaderboards' || this.kind !== 'flight' || CloudUI.open || ReplayPlayer.active || LevelEditor.active;
+        if (input.hidden !== hidden) input.hidden = hidden;
+        if (hidden) return;
         const rect = canvas.getBoundingClientRect(), sx = rect.width / GAME_WIDTH, sy = rect.height / GAME_HEIGHT;
         Object.assign(input.style, { left: `${rect.left + 916 * sx}px`, top: `${rect.top + 170 * sy}px`,
             width: `${72 * sx}px`, height: `${40 * sy}px`, fontSize: `${18 * sy}px` });
