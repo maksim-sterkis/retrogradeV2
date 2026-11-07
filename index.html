@@ -16114,7 +16114,7 @@ const CloudAccount = {
                 this.status = 'Local changes are ready to sync.';
                 await this.restoreCloudRecordings();
             } else if (remote.available || remote.url) {
-                await this.restoreRemote(remote);
+                await this.restoreRemote(remote, !upgrade.applied);
             } else {
                 if (guestBackup && remote.revision === 0) this.pendingGuest = {backup:guestBackup,replays:guestReplays};
                 this.meta.revision = remote.revision; this.meta.dirty = !this.pendingGuest; this.writeMeta();
@@ -16162,7 +16162,7 @@ const CloudAccount = {
         const response = await fetch(url);
         return this.readResponse(response, limit);
     },
-    async restoreRemote(remote) {
+    async restoreRemote(remote, migrate = true) {
         if (!remote.available && !remote.url) throw new Error('There is no cloud backup to load.');
         const previousSuppression = this.suppress; this.suppress = true;
         try {
@@ -16174,7 +16174,7 @@ const CloudAccount = {
             this.conflict = null; this.status = 'Cloud save loaded. Recordings remain separate on this device.';
             await this.restoreCloudRecordings(refs);
             const referenced=new Set(refs.map(r=>`${r.key}:${r.digest}`));
-            if((remote.recordStorage==='legacy'&&refs.length&&!this.needsAttention)||this.cloudRecordings().some(e=>!referenced.has(`${e.key}:${ReplayFormat.digest(e.replay.bytes)}`))){this.meta.dirty=true;this.writeMeta();}
+            if((migrate&&remote.recordStorage==='legacy'&&!this.needsAttention)||this.cloudRecordings().some(e=>!referenced.has(`${e.key}:${ReplayFormat.digest(e.replay.bytes)}`))){this.meta.dirty=true;this.writeMeta();}
         } finally { this.suppress = previousSuppression; }
     },
     async restoreCloudRecordings(refs=[]) {
