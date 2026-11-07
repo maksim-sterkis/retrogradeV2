@@ -2314,8 +2314,11 @@ function normalizeGameSave(parsed, strict = false) {
         previousSplit = split;
         return split;
     });
-    if ((data.bestIGT !== null && data.bestIGT < minimum - 0.05) ||
-        (data.bestRTA !== null && data.bestRTA < minimum - 0.05) ||
+    // A checked full-run recording can be newer than the individual records on
+    // this browser. Do not discard a linked campaign time based on stale ILs.
+    const linked = metric => data.recordEvidence?.[metric]?.value === (metric==='rta'?data.bestRTA:data.bestIGT);
+    if ((data.bestIGT !== null && data.bestIGT < minimum - 0.05 && !linked('igt')) ||
+        (data.bestRTA !== null && data.bestRTA < minimum - 0.05 && !linked('rta')) ||
         (data.bestRTA !== null && data.bestIGT !== null && data.bestRTA < data.bestIGT - 0.05)) {
         data.bestRTA = null; data.bestIGT = null;
     }
@@ -11339,7 +11342,7 @@ function finishSoloLanding() {
             currentRunRTADelta = null;
         }
 
-        if (recordEligible && (prevBest === null || timer < prevBest)) {
+        if (recordEligible && ReplayRecorder.current?.durable && (prevBest === null || timer < prevBest)) {
             saveData.bestLevels[currentLevelIndex] = timer;
             storeSaveData();
         }
@@ -11358,11 +11361,6 @@ function finishSoloLanding() {
                     victoryData.newRTA = (saveData.bestRTA === null || currentRunRTA < saveData.bestRTA);
                     victoryData.newIGT = (saveData.bestIGT === null || currentRunIGT < saveData.bestIGT);
 
-                    if (customFinalLevel === null) {
-                        if (victoryData.newRTA) saveData.bestRTA = currentRunRTA;
-                        if (victoryData.newIGT) saveData.bestIGT = currentRunIGT;
-                        storeSaveData();
-                    }
                 } else {
                     victoryData.newRTA = false;
                     victoryData.newIGT = false;
@@ -11370,7 +11368,12 @@ function finishSoloLanding() {
 
                 // Record eligibility controls records, not whether the player's
                 // completed flight history is retained at all.
-                ReplayRecorder.completeRun(victoryData.invalid ? 'Run is ineligible for records.' : '');
+                const recorded=ReplayRecorder.completeRun(victoryData.invalid ? 'Run is ineligible for records.' : '');
+                if(!victoryData.invalid&&recorded){
+                    if (victoryData.newRTA) saveData.bestRTA = currentRunRTA;
+                    if (victoryData.newIGT) saveData.bestIGT = currentRunIGT;
+                    storeSaveData();
+                }else if(!recorded){victoryData.newRTA=false;victoryData.newIGT=false;}
                 runState = 'inactive';
             }
         }
@@ -11398,7 +11401,7 @@ function finishSoloLanding() {
             else currentSplitStatus = 'SAME';
         }
 
-        if (recordEligible && (prevBest === null || timer < prevBest)) {
+        if (recordEligible && ReplayRecorder.current?.durable && (prevBest === null || timer < prevBest)) {
             saveData.bestTutorial = timer;
             storeSaveData();
         }
@@ -15014,7 +15017,16 @@ const ReplayRecorder = {
             else this.campaign.clean = false;
             this.campaign.clean &&= record.clean;
         }
-        if (record.clean && record.timeTicks > 0 && customFinalLevel===null && this.campaign?.testFinal==null) this.enqueue(this.file([record], 'flight'), 'flight');
+        if (record.clean && record.timeTicks > 0 && customFinalLevel===null && this.campaign?.testFinal==null) {
+            try {
+                const bytes=this.file([record], 'flight'),key=this.pendingKey+'_flight_'+ReplayFormat.digest(bytes),indexKey=this.pendingKey+'_flight_index';
+                const parts=[];for(let i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode(...bytes.subarray(i,i+8192)));
+                const index=JSON.parse(localStorage.getItem(indexKey)||'[]');if(!Array.isArray(index))throw Error('Invalid recording recovery index.');
+                localStorage.setItem(key,JSON.stringify({generation:saveData.replayGeneration,data:btoa(parts.join(''))}));
+                if(!index.includes(key))index.push(key);localStorage.setItem(indexKey,JSON.stringify(index));
+                record.durable=true;this.enqueue(bytes,'flight',key,indexKey);
+            } catch(error){record.durable=false;this.status=`Recording could not be saved: ${error.message}`;}
+        }
     },
     file(segments, kind) {
         const samples = new Uint8Array(segments.reduce((sum, segment) => sum + segment.frames * (segment.stride||ReplayFormat.strideFor({version:segment.version||1})), 0));
@@ -15036,24 +15048,32 @@ const ReplayRecorder = {
     },
     completeRun(invalidReason = '') {
         const run = this.campaign;
-        if (!run) {this.status='No complete run recording: earlier inputs are missing.';return;}
+        if (!run) {this.status='No complete run recording: earlier inputs are missing.';return false;}
         if(run.testFinal==null&&(invalidReason||runInvalidated||!run.clean))run.invalidReason=invalidReason||'Run recording is ineligible for records.';
+        let durable=false, eligible=false;
         try {
             const kind=run.testFinal==null&&!run.invalidReason?'campaign':'test',bytes=this.file(run.segments,kind);
+            eligible=kind==='campaign';
             if(kind==='campaign'||kind==='test'){
                 const parts=[];
                 for(let i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode(...bytes.subarray(i,i+8192)));
-                try{localStorage.setItem(this.pendingKey+'_completed',JSON.stringify({generation:saveData.replayGeneration,data:btoa(parts.join(''))}));}
+                try{localStorage.setItem(this.pendingKey+'_completed',JSON.stringify({generation:saveData.replayGeneration,data:btoa(parts.join(''))}));durable=true;}
                 catch(error){this.status=`Completed recording recovery copy could not be saved: ${error.message}`;}
             }
             this.enqueue(bytes,kind);
         }
         catch (error) { this.status = error.message; }
         this.campaign = null;
+        return durable&&eligible;
     },
-    enqueue(bytes, kind) {
+    enqueue(bytes, kind, flightKey = null, flightIndexKey = null) {
         const completedKey=this.pendingKey+'_completed',generation=saveData.replayGeneration;
         const job = ReplayLibrary.accept(bytes, kind).then(checked=>{
+            if(kind==='flight'&&flightKey){
+                const entry=ReplayLibrary.rows().find(e=>e.persisted&&e.checked?.digest===checked.digest);
+                if(entry)try{localStorage.removeItem(flightKey);const index=JSON.parse(localStorage.getItem(flightIndexKey)||'[]');localStorage.setItem(flightIndexKey,JSON.stringify(index.filter(k=>k!==flightKey)));}catch{}
+                return;
+            }
             if(!['campaign','test'].includes(kind))return;
             const entry=kind==='campaign'?ReplayLibrary.entries.get('last:campaign'):ReplayLibrary.entries.get(`test:campaign:${checked.replay.header.createdAt}`);
             if(entry?.persisted&&entry.checked?.digest===checked.digest){
@@ -15083,6 +15103,16 @@ const ReplayRecorder = {
         await ReplayLibrary.ready;
         if(key!==this.pendingKey+'_completed'||generation!==saveData.replayGeneration)return;
         try{
+            const indexKey=this.pendingKey+'_flight_index',index=JSON.parse(localStorage.getItem(indexKey)||'[]');
+            if(Array.isArray(index))for(const flightKey of index){
+                try{
+                    if(typeof flightKey!=='string'||!flightKey.startsWith(this.pendingKey+'_flight_'))continue;
+                    const item=JSON.parse(localStorage.getItem(flightKey)||'null');
+                    if(!item||item.generation!==generation)continue;
+                    const raw=atob(item.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),replay=ReplayFormat.decode(bytes);
+                    if(replay.header.kind==='flight'&&V21Upgrade.eligibleReplay(replay.header))this.enqueue(bytes,'flight',flightKey,indexKey);
+                }catch{this.status='A recording recovery copy could not be read. Other recordings are kept.';}
+            }
             const journal=JSON.parse(localStorage.getItem(key)||'null');
             if(!journal||journal.generation!==generation)return;
             const raw=atob(journal.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0)),replay=ReplayFormat.decode(bytes);
@@ -16093,7 +16123,7 @@ const CloudAccount = {
             }
             for(const row of campaign){
                 const time=row.metric==='rta'?saveData.bestRTA:row.metric==='igt'?saveData.bestIGT:null;
-                if(validRecordTime(time)&&ReplayFormat.ticksEqual(row.ticks,time*ReplayFormat.hz)&&!available.has(row.digest)&&!recordings.some(r=>r.digest===row.digest))recordings.push(row);
+                if(validRecordTime(time)&&!ReplayLibrary.campaignEntry(row.metric)&&!recordings.some(r=>r.digest===row.digest))recordings.push(row);
             }
             if(serial!==this.serial)return;
             let failed=0;
@@ -16106,6 +16136,27 @@ const CloudAccount = {
                     const linked=campaign.some(r=>r.digest===item.digest)||Object.values(saveData.recordEvidence||{}).some(p=>p?.digest===item.digest);
                     const checked=await ReplayLibrary.accept(bytes,ref?.key?.startsWith('import:')&&!linked?'import':'cloud',()=>serial===this.serial);
                     if(!checked) return;
+                    for(const row of campaign.filter(r=>r.digest===item.digest)){
+                        if(!['rta','igt'].includes(row.metric)||!checked.completed||checked.replay.header.kind!=='campaign'||!ReplayFormat.ticksEqual(checked[row.metric+'Ticks'],row.ticks)||ReplayLibrary.campaignEntry(row.metric))continue;
+                        // Retain the old value separately before replacing an unpaired
+                        // time with the verified time from its own recording.
+                        const archiveKey=`retrograde_v21_unpaired_${this.scope}`;
+                        const archived=JSON.parse(localStorage.getItem(archiveKey)||'[]');
+                        if(!Array.isArray(archived))throw Error('Could not preserve the previous record.');
+                        const field=row.metric==='rta'?'bestRTA':'bestIGT';
+                        archived.push({metric:row.metric,time:saveData[field],savedAt:Date.now()});
+                        localStorage.setItem(archiveKey,JSON.stringify(archived));
+                        const previous=saveData[field],previousEvidence=cloneSave(saveData.recordEvidence||{});
+                        try{
+                            saveData[field]=checked[row.metric];
+                            const entry=ReplayLibrary.rows().find(e=>e.checked?.digest===item.digest&&!e.key.startsWith('import:'));
+                            if(!entry)throw Error('Could not link the verified recording.');
+                            RecordEvidence.bind(entry,saveData,true);
+                            if(!RecordEvidence.matches(saveData.recordEvidence?.[row.metric],checked,saveData[field]))throw Error('Could not link the verified recording.');
+                            if(!storeSaveDataImmediate())throw Error(SaveStore.status);
+                        }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
+                        this.meta.dirty=true;this.writeMeta();
+                    }
                 } catch { failed++; }
             }
             const found=new Set(recordings.map(r=>r.digest));
