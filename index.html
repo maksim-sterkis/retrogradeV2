@@ -15837,71 +15837,71 @@ function handleReplayButton(id) {
     <script>
 // Only public project configuration belongs in the shipped game.
 const CloudConfig = Object.freeze({
-    url: 'https://kedeajeneqxmrjdxyjlw.supabase.co',
-    key: 'sb_publishable_6rq1V5oG1cyshXHndBlw6g_g8Wf4BVn',
+    url: &#x27;https://kedeajeneqxmrjdxyjlw.supabase.co&#x27;,
+    key: &#x27;sb_publishable_6rq1V5oG1cyshXHndBlw6g_g8Wf4BVn&#x27;,
     maxBytes: 16 * 1024 * 1024
 });
 
 const CloudAccount = {
-    session: null, rememberSession: false, rememberError: '', restoreEpoch: 0, sessionKey: 'retrograde_v2_remembered_session', scope: 'guest', suppress: false, ready: false, uploading: null,
-    pingStatus: '', pingBusy: false, firstDirtyAt: 0, retryAttempt: 0, networkOffline: false, jobTimer: null, pendingGuest: null, timer: null, status: 'Guest saves stay on this device.', conflict: null, serial: 0,
+    session: null, rememberSession: false, rememberError: &#x27;&#x27;, restoreEpoch: 0, sessionKey: &#x27;retrograde_v2_remembered_session&#x27;, scope: &#x27;guest&#x27;, suppress: false, ready: false, uploading: null,
+    pingStatus: &#x27;&#x27;, pingBusy: false, firstDirtyAt: 0, retryAttempt: 0, networkOffline: false, jobTimer: null, pendingGuest: null, timer: null, status: &#x27;Guest saves stay on this device.&#x27;, conflict: null, serial: 0,
     meta: { revision: 0, dirty: false, published: [] },
     endpoint(action, query = {}) {
         const url = new URL(`${CloudConfig.url}/functions/v1/retrograde-api`);
-        url.searchParams.set('client',V21Upgrade.version);
-        url.searchParams.set('action', action); url.searchParams.set('api', '2');
+        url.searchParams.set(&#x27;client&#x27;,V21Upgrade.version);
+        url.searchParams.set(&#x27;action&#x27;, action); url.searchParams.set(&#x27;api&#x27;, &#x27;2&#x27;);
         for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
         return url.toString();
     },
-    async request(action, { method = 'GET', body, query, auth = false, headers = {}, raw = false } = {}) {
+    async request(action, { method = &#x27;GET&#x27;, body, query, auth = false, headers = {}, raw = false } = {}) {
         const requestScope = this.scope, requestSerial = this.serial;
         if (auth) await this.ensureSession();
-        if (auth && (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error('Account changed.');
+        if (auth &amp;&amp; (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error(&#x27;Account changed.&#x27;);
         const sessionToken = auth ? this.session?.access_token : null;
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = controller && setTimeout(() => controller.abort(), 45000);
+        const controller = typeof AbortController !== &#x27;undefined&#x27; ? new AbortController() : null;
+        const timeout = controller &amp;&amp; setTimeout(() =&gt; controller.abort(), 45000);
         try {
             const response = await fetch(this.endpoint(action, query), {
                 method, headers: { apikey: CloudConfig.key,
                     ...(auth ? { Authorization: `Bearer ${sessionToken}` } : {}), ...headers },
                 ...(body === undefined ? {} : { body }), ...(controller ? { signal: controller.signal } : {})
             });
-            if (auth && (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error('Account changed.');
-            if (raw && response.ok) {const bytes=await this.readResponse(response);if(auth&&(requestScope!==this.scope||requestSerial!==this.serial))throw new Error('Account changed.');return bytes;}
+            if (auth &amp;&amp; (requestScope !== this.scope || requestSerial !== this.serial)) throw new Error(&#x27;Account changed.&#x27;);
+            if (raw &amp;&amp; response.ok) {const bytes=await this.readResponse(response);if(auth&amp;&amp;(requestScope!==this.scope||requestSerial!==this.serial))throw new Error(&#x27;Account changed.&#x27;);return bytes;}
             let result; try { result = await response.json(); } catch { result = {}; }
-            if (!response.ok) throw Object.assign(new Error(result.error || 'Cloud setup is not deployed yet, or the service is unavailable. Guest play is available.'), { status: response.status, revision: result.revision, retryAfter: Number(response.headers.get('Retry-After')) || result.retryAfter || 0 });
+            if (!response.ok) throw Object.assign(new Error(result.error || &#x27;Cloud setup is not deployed yet, or the service is unavailable. Guest play is available.&#x27;), { status: response.status, revision: result.revision, retryAfter: Number(response.headers.get(&#x27;Retry-After&#x27;)) || result.retryAfter || 0 });
             return result;
         } catch (error) {
             if (error.status) throw error;
-            throw new Error('Could not reach cloud service. Your device save is kept.');
+            throw new Error(&#x27;Could not reach cloud service. Your device save is kept.&#x27;);
         } finally { if (timeout) clearTimeout(timeout); }
     },
     async ping() {
         if (this.pingBusy) return;
-        this.pingBusy = true; this.pingStatus = 'TESTING SERVER...';
+        this.pingBusy = true; this.pingStatus = &#x27;TESTING SERVER...&#x27;;
         const started = performance.now();
         try {
-            const result = await this.request('health');
-            if (result.ready !== true) throw new Error('Unexpected response');
+            const result = await this.request(&#x27;health&#x27;);
+            if (result.ready !== true) throw new Error(&#x27;Unexpected response&#x27;);
             this.pingStatus = `API REACHABLE - ${Math.round(performance.now() - started)} MS`;
-            if (this.session) { const health=await this.request('diagnostics',{auth:true});
-                this.pingStatus=health.database && health.storage ? `API / DATABASE / STORAGE OK - ${Math.round(performance.now()-started)} MS` : 'API REACHABLE - SERVICE CHECK FAILED'; }
+            if (this.session) { const health=await this.request(&#x27;diagnostics&#x27;,{auth:true});
+                this.pingStatus=health.database &amp;&amp; health.storage ? `API / DATABASE / STORAGE OK - ${Math.round(performance.now()-started)} MS` : &#x27;API REACHABLE - SERVICE CHECK FAILED&#x27;; }
         } catch {
-            this.pingStatus = 'SERVICE CHECK FAILED - TRY AGAIN';
+            this.pingStatus = &#x27;SERVICE CHECK FAILED - TRY AGAIN&#x27;;
         } finally { this.pingBusy = false; }
     },
     json(action, body, auth = false) {
-        return this.request(action, { method: 'POST', body: JSON.stringify(body), auth, headers: { 'Content-Type': 'application/json' } });
+        return this.request(action, { method: &#x27;POST&#x27;, body: JSON.stringify(body), auth, headers: { &#x27;Content-Type&#x27;: &#x27;application/json&#x27; } });
     },
     validSession(session) {
-        return session && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(session.user_id || '') &&
-            /^rgat_[a-f0-9]{64}$/.test(session.access_token || '') && /^rgrt_[a-f0-9]{64}$/.test(session.refresh_token || '') &&
-            Number.isSafeInteger(session.expires_at) && session.expires_at >= 0 && typeof session.username === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9 _-]{2,23}$/.test(session.username);
+        return session &amp;&amp; /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(session.user_id || &#x27;&#x27;) &amp;&amp;
+            /^rgat_[a-f0-9]{64}$/.test(session.access_token || &#x27;&#x27;) &amp;&amp; /^rgrt_[a-f0-9]{64}$/.test(session.refresh_token || &#x27;&#x27;) &amp;&amp;
+            Number.isSafeInteger(session.expires_at) &amp;&amp; session.expires_at &gt;= 0 &amp;&amp; typeof session.username === &#x27;string&#x27; &amp;&amp; /^[a-zA-Z0-9][a-zA-Z0-9 _-]{2,23}$/.test(session.username);
     },
     readRemembered() {
         try {
             const saved = JSON.parse(localStorage.getItem(this.sessionKey));
-            if (saved?.version === 1 && this.validSession(saved)) {
+            if (saved?.version === 1 &amp;&amp; this.validSession(saved)) {
                 const { user_id, username, access_token, refresh_token, expires_at } = saved;
                 return { version: 1, user_id, username, access_token, refresh_token, expires_at };
             }
@@ -15911,8 +15911,8 @@ const CloudAccount = {
     },
     clearRemembered(expectedRefresh) {
         try {
-            // A stale tab must not erase another tab's newly rotated session.
-            if (expectedRefresh && JSON.parse(localStorage.getItem(this.sessionKey))?.refresh_token !== expectedRefresh) return;
+            // A stale tab must not erase another tab&#x27;s newly rotated session.
+            if (expectedRefresh &amp;&amp; JSON.parse(localStorage.getItem(this.sessionKey))?.refresh_token !== expectedRefresh) return;
             localStorage.removeItem(this.sessionKey);
         } catch { /* Never remove local progress when forgetting a login. */ }
     },
@@ -15922,25 +15922,25 @@ const CloudAccount = {
         try { localStorage.setItem(this.sessionKey, JSON.stringify({ version: 1, user_id, username, access_token, refresh_token, expires_at })); }
         catch {
             this.rememberSession = false; this.clearRemembered();
-            this.rememberError = 'Signed in for this session only. Your browser could not save the login.';
+            this.rememberError = &#x27;Signed in for this session only. Your browser could not save the login.&#x27;;
         }
     },
     async ensureSession() {
-        if (!this.session) throw new Error('Log in to use cloud saves.');
-        if (this.session.expires_at * 1000 > Date.now() + 60000) return;
+        if (!this.session) throw new Error(&#x27;Log in to use cloud saves.&#x27;);
+        if (this.session.expires_at * 1000 &gt; Date.now() + 60000) return;
         const original = this.session, serial = this.serial;
-        if (!this.refreshing) this.refreshing = this.json('refresh', { refresh_token: original.refresh_token }).then(session => {
-            if (this.session !== original || this.serial !== serial) throw new Error('Account changed. Please log in again.');
-            if (!this.validSession(session) || session.user_id !== original.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401 });
+        if (!this.refreshing) this.refreshing = this.json(&#x27;refresh&#x27;, { refresh_token: original.refresh_token }).then(session =&gt; {
+            if (this.session !== original || this.serial !== serial) throw new Error(&#x27;Account changed. Please log in again.&#x27;);
+            if (!this.validSession(session) || session.user_id !== original.user_id) throw Object.assign(new Error(&#x27;Please log in again.&#x27;), { status: 401 });
             this.session = session; this.persistSession();
-        }).catch(error => {
+        }).catch(error =&gt; {
             if (error.status === 401) this.clearRemembered(original.refresh_token);
             throw error;
-        }).finally(() => { this.refreshing = null; });
+        }).finally(() =&gt; { this.refreshing = null; });
         try { await this.refreshing; }
         catch (error) {
-            const latest = this.rememberSession && this.readRemembered();
-            if (error.status === 401 && this.session === original && this.serial === serial && latest && latest.user_id === original.user_id && latest.refresh_token !== original.refresh_token) {
+            const latest = this.rememberSession &amp;&amp; this.readRemembered();
+            if (error.status === 401 &amp;&amp; this.session === original &amp;&amp; this.serial === serial &amp;&amp; latest &amp;&amp; latest.user_id === original.user_id &amp;&amp; latest.refresh_token !== original.refresh_token) {
                 this.session = latest; return this.ensureSession();
             }
             throw error;
@@ -15949,18 +15949,18 @@ const CloudAccount = {
     async restoreRemembered() {
         const saved = this.readRemembered(); if (!saved) return false;
         const epoch = ++this.restoreEpoch;
-        this.rememberSession = true; this.rememberError = '';
+        this.rememberSession = true; this.rememberError = &#x27;&#x27;;
         let session = saved;
         try {
-            if (saved.expires_at * 1000 > Date.now() + 60000) {
+            if (saved.expires_at * 1000 &gt; Date.now() + 60000) {
                 try {
-                    const identity = await this.request('session', { headers: { Authorization: `Bearer ${saved.access_token}` } });
-                    if (identity.user_id !== saved.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401, invalidIdentity: true });
+                    const identity = await this.request(&#x27;session&#x27;, { headers: { Authorization: `Bearer ${saved.access_token}` } });
+                    if (identity.user_id !== saved.user_id) throw Object.assign(new Error(&#x27;Please log in again.&#x27;), { status: 401, invalidIdentity: true });
                     session = { ...saved, username: identity.username };
-                } catch (error) { if (error.status !== 401 || error.invalidIdentity) throw error; session = await this.json('refresh', { refresh_token: saved.refresh_token }); }
-            } else session = await this.json('refresh', { refresh_token: saved.refresh_token });
+                } catch (error) { if (error.status !== 401 || error.invalidIdentity) throw error; session = await this.json(&#x27;refresh&#x27;, { refresh_token: saved.refresh_token }); }
+            } else session = await this.json(&#x27;refresh&#x27;, { refresh_token: saved.refresh_token });
             if (epoch !== this.restoreEpoch) return false;
-            if (!this.validSession(session) || session.user_id !== saved.user_id) throw Object.assign(new Error('Please log in again.'), { status: 401 });
+            if (!this.validSession(session) || session.user_id !== saved.user_id) throw Object.assign(new Error(&#x27;Please log in again.&#x27;), { status: 401 });
             // Persist a rotated refresh token before any subsequent cloud request.
             this.session = session; this.persistSession();
             await this.connectSession(session);
@@ -15975,66 +15975,66 @@ const CloudAccount = {
     readMeta() {
         try {
             const raw = JSON.parse(localStorage.getItem(this.metaKey()));
-            return { revision: Number.isSafeInteger(raw?.revision) && raw.revision >= 0 ? raw.revision : 0,
-                lastSyncedAt: Number(raw?.lastSyncedAt) || 0, jobs: raw?.competitiveEpoch===21 && raw?.jobs && typeof raw.jobs === 'object' && !Array.isArray(raw.jobs) ? Object.fromEntries(Object.entries(raw.jobs).filter(([digest,job])=>/^[a-f0-9]{64}$/.test(digest)&&job&&typeof job.id==='string').slice(-192)) : {},
-                dirty: raw?.dirty === true, published: raw?.competitiveEpoch===21 && Array.isArray(raw?.published) ? raw.published.filter(v => /^[a-f0-9]{64}$/.test(v)).slice(-192) : [] };
+            return { revision: Number.isSafeInteger(raw?.revision) &amp;&amp; raw.revision &gt;= 0 ? raw.revision : 0,
+                lastSyncedAt: Number(raw?.lastSyncedAt) || 0, jobs: raw?.competitiveEpoch===21 &amp;&amp; raw?.jobs &amp;&amp; typeof raw.jobs === &#x27;object&#x27; &amp;&amp; !Array.isArray(raw.jobs) ? Object.fromEntries(Object.entries(raw.jobs).filter(([digest,job])=&gt;/^[a-f0-9]{64}$/.test(digest)&amp;&amp;job&amp;&amp;typeof job.id===&#x27;string&#x27;).slice(-192)) : {},
+                dirty: raw?.dirty === true, published: raw?.competitiveEpoch===21 &amp;&amp; Array.isArray(raw?.published) ? raw.published.filter(v =&gt; /^[a-f0-9]{64}$/.test(v)).slice(-192) : [] };
         } catch { return { revision: 0, dirty: false, published: [], jobs: {}, lastSyncedAt: 0 }; }
     },
     writeMeta() {
         try { localStorage.setItem(this.metaKey(), JSON.stringify({...this.meta,competitiveEpoch:21})); }
-        catch { this.status = 'Cloud sync state could not be stored. Sync again before closing.'; }
+        catch { this.status = &#x27;Cloud sync state could not be stored. Sync again before closing.&#x27;; }
     },
-    databaseName() { return 'retrograde_v2_fresh1_replays' + (this.scope === 'guest' ? '' : `_${this.scope}`); },
+    databaseName() { return &#x27;retrograde_v2_fresh1_replays&#x27; + (this.scope === &#x27;guest&#x27; ? &#x27;&#x27; : `_${this.scope}`); },
     scheduleSync(delay = 5000) {
         if (this.releasePending || this.maintenancePending || !this.session || this.conflict || this.pendingGuest || this.suppress || this.needsAttention) return;
         if (this.timer) clearTimeout(this.timer);
         const serial=this.serial;
-        this.timer=setTimeout(()=>{this.timer=null;if(this.serial===serial)this.sync().catch(()=>{});},delay);
+        this.timer=setTimeout(()=&gt;{this.timer=null;if(this.serial===serial)this.sync().catch(()=&gt;{});},delay);
     },
     markDirty() {
-        if (!this.ready || this.suppress || this.scope==='guest') return;
+        if (!this.ready || this.suppress || this.scope===&#x27;guest&#x27;) return;
         this.changeCounter=(this.changeCounter||0)+1;
         if (!this.firstDirtyAt) this.firstDirtyAt=Date.now();
         this.meta.dirty = true; this.writeMeta();
-        this.status = this.session ? 'Saved on this device. Cloud sync pending.' : 'Saved on this device. Log in again to sync.';
+        this.status = this.session ? &#x27;Saved on this device. Cloud sync pending.&#x27; : &#x27;Saved on this device. Log in again to sync.&#x27;;
         if (CloudUI.open) CloudUI.status(this.status);
         this.scheduleSync(Math.max(0,Math.min(5000,30000-(Date.now()-this.firstDirtyAt))));
     },
     showError(error) {
-        this.status=error.message;this.needsAttention=Boolean(error.status && error.status!==429 && error.status<500);
+        this.status=error.message;this.needsAttention=Boolean(error.status &amp;&amp; error.status!==429 &amp;&amp; error.status&lt;500);
         if(this.needsAttention){if(this.timer)clearTimeout(this.timer);this.timer=null;if(this.jobTimer)clearTimeout(this.jobTimer);this.jobTimer=null;}
         if(error.status===401){this.authExpired=true;this.clearRemembered(this.session?.refresh_token);}
-        if (error.status===401) this.status='Please log in again. Your device changes are kept.';
-        else if (!error.status || error.status===429 || error.status>=500) {
+        if (error.status===401) this.status=&#x27;Please log in again. Your device changes are kept.&#x27;;
+        else if (!error.status || error.status===429 || error.status&gt;=500) {
             this.networkOffline=!error.status;
             const waits=[5000,15000,30000,60000],base=waits[Math.min(this.retryAttempt++,3)];
             this.scheduleSync(Math.max(base,Math.min(3600000,(error.retryAfter||0)*1000))+Math.floor(Math.random()*1000));
         }
         if (CloudUI.open) CloudUI.status(this.status);
     },
-    pendingRecords() { return Object.values(this.meta.jobs || {}).filter(j=>['queued','verifying'].includes(j.state)); },
+    pendingRecords() { return Object.values(this.meta.jobs || {}).filter(j=&gt;[&#x27;queued&#x27;,&#x27;verifying&#x27;].includes(j.state)); },
     stateLabel() {
-        if (this.needsAttention || this.conflict || Object.values(this.meta.jobs || {}).some(j=>j.state==='rejected')) return 'NEEDS ATTENTION';
-        if (this.networkOffline) return 'OFFLINE';
-        if (this.uploading) return 'SYNCING';
-        return this.hasUnsyncedChanges() || this.pendingRecords().length ? 'PENDING' : 'SYNCED';
+        if (this.needsAttention || this.conflict || Object.values(this.meta.jobs || {}).some(j=&gt;j.state===&#x27;rejected&#x27;)) return &#x27;NEEDS ATTENTION&#x27;;
+        if (this.networkOffline) return &#x27;OFFLINE&#x27;;
+        if (this.uploading) return &#x27;SYNCING&#x27;;
+        return this.hasUnsyncedChanges() || this.pendingRecords().length ? &#x27;PENDING&#x27; : &#x27;SYNCED&#x27;;
     },
     accountMessage() {
-        if(this.conflict)return this.status||'Cloud and device saves need your choice.';
-        const rejected=Object.values(this.meta.jobs||{}).find(job=>job.state==='rejected');
-        if(rejected)return rejected.error||'A recording needs attention.';
-        if(this.needsAttention)return /attention|failed|could not|not available|error|retry|log in/i.test(this.status)?this.status:'A recording could not be restored. Try signing in again.';
+        if(this.conflict)return this.status||&#x27;Cloud and device saves need your choice.&#x27;;
+        const rejected=Object.values(this.meta.jobs||{}).find(job=&gt;job.state===&#x27;rejected&#x27;);
+        if(rejected)return rejected.error||&#x27;A recording needs attention.&#x27;;
+        if(this.needsAttention)return this.status||&#x27;Cloud sync needs attention.&#x27;;
         return this.status;
     },
     scheduleJobPoll() {
         if (this.jobTimer) clearTimeout(this.jobTimer);this.jobTimer=null;
         if (!this.session || this.needsAttention || !this.pendingRecords().length) return;
         const serial=this.serial;
-        this.jobTimer=setTimeout(()=>{this.jobTimer=null;if(serial===this.serial)this.sync().catch(()=>{});},15000);
+        this.jobTimer=setTimeout(()=&gt;{this.jobTimer=null;if(serial===this.serial)this.sync().catch(()=&gt;{});},15000);
     },
     async switchScope(scope) {
         this.libraryStored=new Set();
-        if(typeof Operations!=='undefined'&&scope!==this.scope)Operations.reset();
+        if(typeof Operations!==&#x27;undefined&#x27;&amp;&amp;scope!==this.scope)Operations.reset();
         this.maintenancePending=false;
         this.releasePending=false;
         this.serial++; this.firstDirtyAt=0;this.retryAttempt=0;this.networkOffline=false;this.needsAttention=false;this.authExpired=false;
@@ -16046,39 +16046,39 @@ const CloudAccount = {
         storeSaveDataImmediate();
         ReplayLibrary.database?.close(); ReplayLibrary.database = null;
         ReplayLibrary.entries.clear(); ReplayLibrary.pending = null; ReplayLibrary.auditJob = null;
-        ReplayLibrary.auditStatus = ''; ReplayLibrary.status = ''; ReplayLibrary.page = 0;
+        ReplayLibrary.auditStatus = &#x27;&#x27;; ReplayLibrary.status = &#x27;&#x27;; ReplayLibrary.page = 0;
         ReplayRecorder.current = null; ReplayRecorder.campaign = null; ReplayRecorder.ghost = null;
         ReplayRecorder.resumeRequest++; ReplayRecorder.restoring = null;
         this.scope = scope; this.lastCleanup = 0;
-        const suffix = scope === 'guest' ? '' : `_${scope}`;
-        SaveStore.keys = ['retrograde_v21_snapshot_a', 'retrograde_v21_snapshot_b'].map(key => key + suffix);
-        SaveStore.legacyKeys = ['retrograde_v2_fresh1_snapshot_a', 'retrograde_v2_fresh1_snapshot_b'].map(key => key + suffix);
-        ReplayRecorder.pendingKey = 'retrograde_v2_fresh1_pending_run' + suffix;
+        const suffix = scope === &#x27;guest&#x27; ? &#x27;&#x27; : `_${scope}`;
+        SaveStore.keys = [&#x27;retrograde_v21_snapshot_a&#x27;, &#x27;retrograde_v21_snapshot_b&#x27;].map(key =&gt; key + suffix);
+        SaveStore.legacyKeys = [&#x27;retrograde_v2_fresh1_snapshot_a&#x27;, &#x27;retrograde_v2_fresh1_snapshot_b&#x27;].map(key =&gt; key + suffix);
+        ReplayRecorder.pendingKey = &#x27;retrograde_v2_fresh1_pending_run&#x27; + suffix;
         SaveStore.sequence = 0; SaveStore.base = null; SaveStore.pendingRestore = null;
-        SaveStore.checkpointDirty = false; SaveStore.notice = ''; SaveStore.init();
+        SaveStore.checkpointDirty = false; SaveStore.notice = &#x27;&#x27;; SaveStore.init();
         LevelEditor.preferencesLoaded = false; LevelEditor.model = null; LevelEditor.draftActive = false;
         ReplayLibrary.init(); await ReplayLibrary.ready;
         await ReplayRecorder.recoverCompleted();
         this.meta = this.readMeta();
-        isPracticeMode = false; isSpeedrunMode = false; runState = 'inactive';
+        isPracticeMode = false; isSpeedrunMode = false; runState = &#x27;inactive&#x27;;
         runInvalidated = false; isPaused = false; customFinalLevel = null; cheatsEnabled = false;
         RunTiming.reset(); goToMenu();
-        MAX_PARTICLES = saveData.visualEffects === 'high' ? 800 : saveData.visualEffects === 'medium' ? 400 : 200;
+        MAX_PARTICLES = saveData.visualEffects === &#x27;high&#x27; ? 800 : saveData.visualEffects === &#x27;medium&#x27; ? 400 : 200;
         AudioSystem.updateVolumes(); applyRenderScale(saveData.renderScale);
     },
-    async login(username, password, captcha = '', keepSignedIn = false) {
+    async login(username, password, captcha = &#x27;&#x27;, keepSignedIn = false) {
         ++this.restoreEpoch;
         if (this.uploading) await this.uploading;
-        const session = await this.json('login', { username, password, captcha });
-        if (!this.validSession(session)) throw new Error('Invalid account response.');
-        this.rememberSession = keepSignedIn; this.rememberError = '';
+        const session = await this.json(&#x27;login&#x27;, { username, password, captcha });
+        if (!this.validSession(session)) throw new Error(&#x27;Invalid account response.&#x27;);
+        this.rememberSession = keepSignedIn; this.rememberError = &#x27;&#x27;;
         if (!keepSignedIn) this.clearRemembered();
         await this.connectSession(session);
         if (this.rememberError) this.status = this.rememberError;
     },
     async connectSession(session) {
         let guestBackup = null, guestReplays = null;
-        if (this.scope === 'guest') {
+        if (this.scope === &#x27;guest&#x27;) {
             goToMenu(); storeSaveDataImmediate();
             guestBackup = await SaveStore.backupFile();
             guestReplays = ReplayLibrary.backupArchive();
@@ -16090,49 +16090,49 @@ const CloudAccount = {
             this.session = session; this.persistSession();
             // Resolve role and maintenance immediately after authentication. A
             // lock must not strand login on protected upgrade/save requests.
-            if(typeof Operations!=='undefined'&&Operations.root){
+            if(typeof Operations!==&#x27;undefined&#x27;&amp;&amp;Operations.root){
                 await Operations.poll();
                 if(Operations.status?.active){
                     this.maintenancePending=true;
                     this.ready=true;
-                    this.status=Operations.status.developer?'Developer access is available during maintenance.':Operations.status.active.message;
+                    this.status=Operations.status.developer?&#x27;Developer access is available during maintenance.&#x27;:Operations.status.active.message;
                     return;
                 }
             }
-            const upgrade=await this.request('upgrade',{method:'POST',auth:true});
-            if(upgrade.pending){this.releasePending=true;this.ready=true;this.status='V2.1 cloud upgrades are staged until release. V2 accounts are unchanged.';return;}
+            const upgrade=await this.request(&#x27;upgrade&#x27;,{method:&#x27;POST&#x27;,auth:true});
+            if(upgrade.pending){this.releasePending=true;this.ready=true;this.status=&#x27;V2.1 cloud upgrades are staged until release. V2 accounts are unchanged.&#x27;;return;}
             if(upgrade.applied){
                 saveData=normalizeGameSave(V21Upgrade.game(saveData,true),true);
                 await ReplayLibrary.clearForUpgrade();
                 if(!storeSaveDataImmediate())throw new Error(SaveStore.status);
                 this.meta.jobs={};this.meta.published=[];this.writeMeta();
             }
-            const remote = await this.request('save', { auth: true });
-            if (this.meta.dirty && this.meta.revision !== remote.revision) {
-                this.conflict = remote; this.status = 'This device and cloud have different saves. Choose which to keep.';
+            const remote = await this.request(&#x27;save&#x27;, { auth: true });
+            if (this.meta.dirty &amp;&amp; this.meta.revision !== remote.revision) {
+                this.conflict = remote; this.status = &#x27;This device and cloud have different saves. Choose which to keep.&#x27;;
             } else if (this.meta.dirty) {
-                this.status = 'Local changes are ready to sync.';
+                this.status = &#x27;Local changes are ready to sync.&#x27;;
                 await this.restoreCloudRecordings();
             } else if (remote.available || remote.url) {
                 await this.restoreRemote(remote);
             } else {
-                if (guestBackup && remote.revision === 0) this.pendingGuest = {backup:guestBackup,replays:guestReplays};
+                if (guestBackup &amp;&amp; remote.revision === 0) this.pendingGuest = {backup:guestBackup,replays:guestReplays};
                 this.meta.revision = remote.revision; this.meta.dirty = !this.pendingGuest; this.writeMeta();
-                this.status = 'New cloud account. Your guest save is kept separately.';
+                this.status = &#x27;New cloud account. Your guest save is kept separately.&#x27;;
             }
             this.ready = true;
         } catch (error) {
             // A failed/invalid remote restore never uploads default state over it.
             this.conflict = { unavailable: true }; this.status = error.message;
             throw error;
-        } finally { this.suppress = false; if(this.meta.dirty&&!this.conflict&&!this.pendingGuest)this.scheduleSync(); }
+        } finally { this.suppress = false; if(this.meta.dirty&amp;&amp;!this.conflict&amp;&amp;!this.pendingGuest)this.scheduleSync(); }
     },
     async bringGuestProgress() {
-        if (!this.session || !this.pendingGuest) throw new Error('No guest progress is waiting to transfer.');
-        const remote = await this.request('save', { auth: true });
+        if (!this.session || !this.pendingGuest) throw new Error(&#x27;No guest progress is waiting to transfer.&#x27;);
+        const remote = await this.request(&#x27;save&#x27;, { auth: true });
         if (remote.available || remote.url || remote.revision !== 0) {
             this.pendingGuest = null; this.conflict = remote;
-            throw new Error('This account now has a cloud save. Load it before making further changes.');
+            throw new Error(&#x27;This account now has a cloud save. Load it before making further changes.&#x27;);
         }
         this.suppress = true;
         try {
@@ -16148,60 +16148,60 @@ const CloudAccount = {
         await this.sync();
     },
     async readResponse(response, limit = CloudConfig.maxBytes) {
-        if (!response.ok) throw new Error('Cloud file download failed. Please retry.');
-        if (Number(response.headers.get('content-length')) > limit) throw new Error('Cloud file is too large.');
+        if (!response.ok) throw new Error(&#x27;Cloud file download failed. Please retry.&#x27;);
+        if (Number(response.headers.get(&#x27;content-length&#x27;)) &gt; limit) throw new Error(&#x27;Cloud file is too large.&#x27;);
         const reader = response.body?.getReader();
-        if (!reader) { const bytes = new Uint8Array(await response.arrayBuffer()); if (bytes.length > limit) throw new Error('Cloud file is too large.'); return bytes; }
+        if (!reader) { const bytes = new Uint8Array(await response.arrayBuffer()); if (bytes.length &gt; limit) throw new Error(&#x27;Cloud file is too large.&#x27;); return bytes; }
         const chunks = []; let length = 0;
-        while (true) { const {value, done} = await reader.read(); if (done) break; length += value.length; if (length > limit) { await reader.cancel(); throw new Error('Cloud file is too large.'); } chunks.push(value); }
+        while (true) { const {value, done} = await reader.read(); if (done) break; length += value.length; if (length &gt; limit) { await reader.cancel(); throw new Error(&#x27;Cloud file is too large.&#x27;); } chunks.push(value); }
         const bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; } return bytes;
     },
     async download(url, limit = CloudConfig.maxBytes) {
         const parsed = new URL(url), base = new URL(CloudConfig.url);
-        if (parsed.origin !== base.origin || !parsed.pathname.startsWith('/storage/v1/')) throw new Error('Invalid cloud file address.');
+        if (parsed.origin !== base.origin || !parsed.pathname.startsWith(&#x27;/storage/v1/&#x27;)) throw new Error(&#x27;Invalid cloud file address.&#x27;);
         const response = await fetch(url);
         return this.readResponse(response, limit);
     },
     async restoreRemote(remote) {
-        if (!remote.available && !remote.url) throw new Error('There is no cloud backup to load.');
+        if (!remote.available &amp;&amp; !remote.url) throw new Error(&#x27;There is no cloud backup to load.&#x27;);
         const previousSuppression = this.suppress; this.suppress = true;
         try {
-            const bytes = remote.available ? await this.request('save-file', { auth: true, raw: true, query: { revision: remote.revision, previous: remote.previous ? '1' : '0' } }) : await this.download(remote.url);
+            const bytes = remote.available ? await this.request(&#x27;save-file&#x27;, { auth: true, raw: true, query: { revision: remote.revision, previous: remote.previous ? &#x27;1&#x27; : &#x27;0&#x27; } }) : await this.download(remote.url);
             if (!await SaveStore.readBackupFile(bytes.buffer)) throw new Error(loadStatus);
             const refs=SaveStore.pendingRestore?.replayRefs||[];
             if (!await SaveStore.restoreBackup()) throw new Error(loadStatus);
             this.meta.revision = remote.revision; this.meta.dirty = false; this.firstDirtyAt=0; this.meta.lastSyncedAt=Date.now(); this.writeMeta();
-            this.conflict = null; this.status = 'Cloud save loaded. Recordings remain separate on this device.';
+            this.conflict = null; this.status = &#x27;Cloud save loaded. Recordings remain separate on this device.&#x27;;
             await this.restoreCloudRecordings(refs);
-            const referenced=new Set(refs.map(r=>`${r.key}:${r.digest}`));
-            if(ReplayLibrary.rows(true).some(e=>!referenced.has(`${e.key}:${ReplayFormat.digest(e.replay.bytes)}`))){this.meta.dirty=true;this.writeMeta();}
+            const referenced=new Set(refs.map(r=&gt;`${r.key}:${r.digest}`));
+            if((remote.recordStorage===&#x27;legacy&#x27;&amp;&amp;refs.length&amp;&amp;!this.needsAttention)||this.cloudRecordings().some(e=&gt;!referenced.has(`${e.key}:${ReplayFormat.digest(e.replay.bytes)}`))){this.meta.dirty=true;this.writeMeta();}
         } finally { this.suppress = previousSuppression; }
     },
     async restoreCloudRecordings(refs=[]) {
         const serial=this.serial;
         // Earlier imports are intentionally not record evidence. If one exactly
         // matches a saved full-run time, verify it before linking it as a run.
-        for(const entry of ReplayLibrary.rows().filter(e=>e.key.startsWith('import:')&&e.replay.header.kind==='campaign')){
+        for(const entry of ReplayLibrary.rows().filter(e=&gt;e.key.startsWith(&#x27;import:&#x27;)&amp;&amp;e.replay.header.kind===&#x27;campaign&#x27;)){
             const h=entry.replay.header;
-            if((validRecordTime(saveData.bestRTA)&&ReplayFormat.ticksEqual(h.rtaTicks,saveData.bestRTA*ReplayFormat.hz)&&!ReplayLibrary.campaignEntry('rta'))||
-               (validRecordTime(saveData.bestIGT)&&ReplayFormat.ticksEqual(h.igtTicks,saveData.bestIGT*ReplayFormat.hz)&&!ReplayLibrary.campaignEntry('igt'))){
-                try{await ReplayLibrary.accept(entry.replay.bytes,'cloud',()=>serial===this.serial);}catch{/* Keep the original imported file. */}
+            if((validRecordTime(saveData.bestRTA)&amp;&amp;ReplayFormat.ticksEqual(h.rtaTicks,saveData.bestRTA*ReplayFormat.hz)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;rta&#x27;))||
+               (validRecordTime(saveData.bestIGT)&amp;&amp;ReplayFormat.ticksEqual(h.igtTicks,saveData.bestIGT*ReplayFormat.hz)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;igt&#x27;))){
+                try{await ReplayLibrary.accept(entry.replay.bytes,&#x27;cloud&#x27;,()=&gt;serial===this.serial);}catch{/* Keep the original imported file. */}
                 if(serial!==this.serial)return;
             }
         }
-        const available=new Set(ReplayLibrary.rows(true).map(entry=>ReplayFormat.digest(entry.replay.bytes)));
-        const digests=[...new Set([...refs.map(ref=>ref.digest),...Object.values(saveData.recordEvidence||{}).map(link=>link?.digest)].filter(d=>/^[a-f0-9]{64}$/.test(d)&&!available.has(d)))];
-        const missingCampaign=(validRecordTime(saveData.bestRTA)&&!ReplayLibrary.campaignEntry('rta'))||(validRecordTime(saveData.bestIGT)&&!ReplayLibrary.campaignEntry('igt'));
-        if(!digests.length&&!missingCampaign)return;
+        const available=new Set(ReplayLibrary.rows(true).map(entry=&gt;ReplayFormat.digest(entry.replay.bytes)));
+        const digests=[...new Set([...refs.map(ref=&gt;ref.digest),...Object.values(saveData.recordEvidence||{}).map(link=&gt;link?.digest)].filter(d=&gt;/^[a-f0-9]{64}$/.test(d)&amp;&amp;!available.has(d)))];
+        const missingCampaign=(validRecordTime(saveData.bestRTA)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;rta&#x27;))||(validRecordTime(saveData.bestIGT)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;igt&#x27;));
+        if(!digests.length&amp;&amp;!missingCampaign)return;
         try {
             const recordings=[],campaign=[];
-            for(let i=0;i<Math.max(1,Math.ceil(digests.length/40));i++){
-                const result=await this.json('own-recordings',{digests:digests.slice(i*40,i*40+40),campaign:missingCampaign&&i===0},true);
+            for(let i=0;i&lt;Math.max(1,Math.ceil(digests.length/40));i++){
+                const result=await this.json(&#x27;own-recordings&#x27;,{digests:digests.slice(i*40,i*40+40),campaign:missingCampaign&amp;&amp;i===0},true);
                 recordings.push(...result.recordings);campaign.push(...(result.campaign||[]));
             }
             for(const row of campaign){
-                const time=row.metric==='rta'?saveData.bestRTA:row.metric==='igt'?saveData.bestIGT:null;
-                if(validRecordTime(time)&&!ReplayLibrary.campaignEntry(row.metric)&&!recordings.some(r=>r.digest===row.digest))recordings.push(row);
+                const time=row.metric===&#x27;rta&#x27;?saveData.bestRTA:row.metric===&#x27;igt&#x27;?saveData.bestIGT:null;
+                if(validRecordTime(time)&amp;&amp;!ReplayLibrary.campaignEntry(row.metric)&amp;&amp;!recordings.some(r=&gt;r.digest===row.digest))recordings.push(row);
             }
             if(serial!==this.serial)return;
             let failed=0;
@@ -16209,30 +16209,30 @@ const CloudAccount = {
                 try {
                     const bytes=await this.download(item.url);
                     if(serial!==this.serial)return;
-                    if(ReplayFormat.digest(bytes)!==item.digest)throw Error('Cloud recording digest mismatch.');
-                    const ref=refs.find(r=>r.digest===item.digest&&!r.key.startsWith('import:'))||refs.find(r=>r.digest===item.digest);
-                    const linked=campaign.some(r=>r.digest===item.digest)||Object.values(saveData.recordEvidence||{}).some(p=>p?.digest===item.digest);
-                    const checked=await ReplayLibrary.accept(bytes,ref?.key?.startsWith('import:')&&!linked?'import':'cloud',()=>serial===this.serial);
+                    if(ReplayFormat.digest(bytes)!==item.digest)throw Error(&#x27;Cloud recording digest mismatch.&#x27;);
+                    const ref=refs.find(r=&gt;r.digest===item.digest&amp;&amp;!r.key.startsWith(&#x27;import:&#x27;))||refs.find(r=&gt;r.digest===item.digest);
+                    const linked=campaign.some(r=&gt;r.digest===item.digest)||Object.values(saveData.recordEvidence||{}).some(p=&gt;p?.digest===item.digest);
+                    const checked=await ReplayLibrary.accept(bytes,ref?.key?.startsWith(&#x27;import:&#x27;)&amp;&amp;!linked?&#x27;import&#x27;:&#x27;cloud&#x27;,()=&gt;serial===this.serial);
                     if(!checked) return;
-                    for(const row of campaign.filter(r=>r.digest===item.digest)){
-                        if(!['rta','igt'].includes(row.metric)||!checked.completed||checked.replay.header.kind!=='campaign'||!ReplayFormat.ticksEqual(checked[row.metric+'Ticks'],row.ticks)||ReplayLibrary.campaignEntry(row.metric))continue;
+                    for(const row of campaign.filter(r=&gt;r.digest===item.digest)){
+                        if(![&#x27;rta&#x27;,&#x27;igt&#x27;].includes(row.metric)||!checked.completed||checked.replay.header.kind!==&#x27;campaign&#x27;||!ReplayFormat.ticksEqual(checked[row.metric+&#x27;Ticks&#x27;],row.ticks)||ReplayLibrary.campaignEntry(row.metric))continue;
                         // Retain the old value separately before replacing an unpaired
                         // time with the verified time from its own recording.
                         const archiveKey=`retrograde_v21_unpaired_${this.scope}`;
-                        const archived=JSON.parse(localStorage.getItem(archiveKey)||'[]');
-                        if(!Array.isArray(archived))throw Error('Could not preserve the previous record.');
-                        const field=row.metric==='rta'?'bestRTA':'bestIGT';
+                        const archived=JSON.parse(localStorage.getItem(archiveKey)||&#x27;[]&#x27;);
+                        if(!Array.isArray(archived))throw Error(&#x27;Could not preserve the previous record.&#x27;);
+                        const field=row.metric===&#x27;rta&#x27;?&#x27;bestRTA&#x27;:&#x27;bestIGT&#x27;;
                         archived.push({metric:row.metric,time:saveData[field],savedAt:Date.now()});
                         localStorage.setItem(archiveKey,JSON.stringify(archived));
                         const previous=saveData[field],previousEvidence=cloneSave(saveData.recordEvidence||{});
                         try{
                             saveData[field]=checked[row.metric];
-                            const entry=ReplayLibrary.rows().find(e=>e.checked?.digest===item.digest&&!e.key.startsWith('import:'));
-                            if(!entry)throw Error('Could not link the verified recording.');
+                            const entry=ReplayLibrary.rows().find(e=&gt;e.checked?.digest===item.digest&amp;&amp;!e.key.startsWith(&#x27;import:&#x27;));
+                            if(!entry)throw Error(&#x27;Could not link the verified recording.&#x27;);
                             RecordEvidence.bind(entry,saveData,true);
-                            if(!RecordEvidence.matches(saveData.recordEvidence?.[row.metric],checked,saveData[field]))throw Error('Could not link the verified recording.');
+                            if(!RecordEvidence.matches(saveData.recordEvidence?.[row.metric],checked,saveData[field]))throw Error(&#x27;Could not link the verified recording.&#x27;);
                             SaveStore.recordRepair={field,previous,value:checked[row.metric]};
-                            try{if(!storeSaveDataImmediate()||saveData[field]!==checked[row.metric])throw Error(SaveStore.status||'Record repair was not saved.');}
+                            try{if(!storeSaveDataImmediate()||saveData[field]!==checked[row.metric])throw Error(SaveStore.status||&#x27;Record repair was not saved.&#x27;);}
                             finally{SaveStore.recordRepair=null;}
                         }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
                         this.meta.dirty=true;this.writeMeta();
@@ -16243,54 +16243,68 @@ const CloudAccount = {
             // Use that same recording if the other saved time has no replay.
             // Entries loaded from this browser have not necessarily been checked
             // yet, even when their bytes are already present locally.
-            for(const entry of ReplayLibrary.rows().filter(e=>!e.key.startsWith('import:')&&!e.checked&&e.replay.header.kind==='campaign')){
+            for(const entry of ReplayLibrary.rows().filter(e=&gt;!e.key.startsWith(&#x27;import:&#x27;)&amp;&amp;!e.checked&amp;&amp;e.replay.header.kind===&#x27;campaign&#x27;)){
                 try{await ReplayLibrary.check(entry);}catch{/* Leave invalid recordings untouched. */}
                 if(serial!==this.serial)return;
             }
-            for(const metric of ['rta','igt']){
-                const field=metric==='rta'?'bestRTA':'bestIGT';
+            for(const metric of [&#x27;rta&#x27;,&#x27;igt&#x27;]){
+                const field=metric===&#x27;rta&#x27;?&#x27;bestRTA&#x27;:&#x27;bestIGT&#x27;;
                 if(!validRecordTime(saveData[field])||ReplayLibrary.campaignEntry(metric))continue;
-                const candidates=ReplayLibrary.rows().filter(e=>!e.key.startsWith('import:')&&e.checked?.completed&&e.replay.header.kind==='campaign'&&e.persisted!==false);
-                candidates.sort((a,b)=>a.checked[metric]-b.checked[metric]);
+                const candidates=ReplayLibrary.rows().filter(e=&gt;!e.key.startsWith(&#x27;import:&#x27;)&amp;&amp;e.checked?.completed&amp;&amp;e.replay.header.kind===&#x27;campaign&#x27;&amp;&amp;e.persisted!==false);
+                candidates.sort((a,b)=&gt;a.checked[metric]-b.checked[metric]);
                 const entry=candidates[0];if(!entry||serial!==this.serial)continue;
                 const archiveKey=`retrograde_v21_unpaired_${this.scope}`;
-                const archived=JSON.parse(localStorage.getItem(archiveKey)||'[]');
-                if(!Array.isArray(archived))throw Error('Could not preserve the previous record.');
+                const archived=JSON.parse(localStorage.getItem(archiveKey)||&#x27;[]&#x27;);
+                if(!Array.isArray(archived))throw Error(&#x27;Could not preserve the previous record.&#x27;);
                 archived.push({metric,time:saveData[field],savedAt:Date.now()});localStorage.setItem(archiveKey,JSON.stringify(archived));
                 const previous=saveData[field],previousEvidence=cloneSave(saveData.recordEvidence||{});
                 try{
                     saveData[field]=entry.checked[metric];RecordEvidence.bind(entry,saveData,true);
-                    if(!RecordEvidence.matches(saveData.recordEvidence?.[metric],entry.checked,saveData[field]))throw Error('Could not link the verified recording.');
+                    if(!RecordEvidence.matches(saveData.recordEvidence?.[metric],entry.checked,saveData[field]))throw Error(&#x27;Could not link the verified recording.&#x27;);
                     SaveStore.recordRepair={field,previous,value:entry.checked[metric]};
-                    try{if(!storeSaveDataImmediate()||saveData[field]!==entry.checked[metric])throw Error(SaveStore.status||'Record repair was not saved.');}
+                    try{if(!storeSaveDataImmediate()||saveData[field]!==entry.checked[metric])throw Error(SaveStore.status||&#x27;Record repair was not saved.&#x27;);}
                     finally{SaveStore.recordRepair=null;}
                 }catch(error){saveData[field]=previous;saveData.recordEvidence=previousEvidence;throw error;}
                 this.meta.dirty=true;this.writeMeta();
             }
-            const found=new Set(recordings.map(r=>r.digest));
-            const stillMissingCampaign=(validRecordTime(saveData.bestRTA)&&!ReplayLibrary.campaignEntry('rta'))||(validRecordTime(saveData.bestIGT)&&!ReplayLibrary.campaignEntry('igt'));
-            const stillReferenced=d=>refs.some(r=>r.digest===d)||Object.values(saveData.recordEvidence||{}).some(p=>p?.digest===d);
-            if(failed||digests.some(d=>!found.has(d)&&stillReferenced(d))||stillMissingCampaign){this.needsAttention=true;this.status='Some recordings could not be restored; the originals remain on their device.';}
-            else this.status='Cloud save and available recordings loaded.';
+            const found=new Set(recordings.map(r=&gt;r.digest));
+            const stillMissingCampaign=(validRecordTime(saveData.bestRTA)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;rta&#x27;))||(validRecordTime(saveData.bestIGT)&amp;&amp;!ReplayLibrary.campaignEntry(&#x27;igt&#x27;));
+            const stillReferenced=d=&gt;refs.some(r=&gt;r.digest===d)||Object.values(saveData.recordEvidence||{}).some(p=&gt;p?.digest===d);
+            if(failed||digests.some(d=&gt;!found.has(d)&amp;&amp;stillReferenced(d))||stillMissingCampaign){this.needsAttention=true;this.status=&#x27;Some recordings could not be restored; the originals remain on their device.&#x27;;}
+            else this.status=&#x27;Cloud save and available recordings loaded.&#x27;;
         } catch(error) { if(serial===this.serial){this.needsAttention=true;this.status=`Cloud save loaded; recording recovery failed: ${error.message}`;} }
     },
     async choosePrevious() {
-        const remote = await this.request('save', { auth: true, query: { previous: '1' } });
+        const remote = await this.request(&#x27;save&#x27;, { auth: true, query: { previous: &#x27;1&#x27; } });
         await this.restoreRemote(remote);
         this.meta.dirty = true; this.writeMeta();
-        this.status = 'Previous backup restored on this device. Sync to make it current.';
+        this.status = &#x27;Previous backup restored on this device. Sync to make it current.&#x27;;
     },
     async chooseCloud() {
-        const remote = await this.request('save', { auth: true });
+        const remote = await this.request(&#x27;save&#x27;, { auth: true });
         await this.restoreRemote(remote);
     },
     async chooseDevice() {
-        const remote = await this.request('save', { auth: true });
-        if (this.conflict?.revision !== undefined && remote.revision !== this.conflict.revision) {
-            this.conflict = remote; throw new Error('Cloud changed again. Review your choice and try again.');
+        const remote = await this.request(&#x27;save&#x27;, { auth: true });
+        if (this.conflict?.revision !== undefined &amp;&amp; remote.revision !== this.conflict.revision) {
+            this.conflict = remote; throw new Error(&#x27;Cloud changed again. Review your choice and try again.&#x27;);
         }
         this.meta.revision = remote.revision; this.meta.dirty = true; this.writeMeta(); this.conflict = null;
         await this.sync();
+    },
+    cloudRecordings() {
+        const slots = new Map();
+        for (const entry of ReplayLibrary.rows()) {
+            if (!entry.key.startsWith(&#x27;best:&#x27;)) continue;
+            const header = entry.replay.header;
+            if (header.kind === &#x27;campaign&#x27; &amp;&amp; [&#x27;best:campaign:rta&#x27;, &#x27;best:campaign:igt&#x27;].includes(entry.key)) {
+                slots.set(entry.key, entry);
+            } else if (header.kind === &#x27;flight&#x27; &amp;&amp; header.segments[0].result === &#x27;won&#x27;) {
+                const { level } = header.segments[0];
+                if (level &gt;= -1 &amp;&amp; level &lt; levels.length &amp;&amp; !slots.has(level)) slots.set(level, entry);
+            }
+        }
+        return [...slots.values()];
     },
     async sync() {
         if (this.releasePending || this.maintenancePending || !this.session || this.suppress || this.conflict || this.pendingGuest) return;
@@ -16298,38 +16312,38 @@ const CloudAccount = {
         const owner = this.scope, serial = this.serial;
         if(this.timer)clearTimeout(this.timer);this.timer=null;
         let completed = false;
-        this.uploading = (async () => {
+        this.uploading = (async () =&gt; {
             if (this.meta.dirty) {
-                this.status = 'Uploading complete cloud save...';
+                this.status = &#x27;Uploading complete cloud save...&#x27;;
                 this.firstDirtyAt=0;
                 await ReplayLibrary.ready;while(ReplayRecorder.jobs.size)await Promise.all([...ReplayRecorder.jobs]);
-                const sequence = SaveStore.sequence, changes=this.changeCounter||0, entries=ReplayLibrary.rows(true), refs=[];
+                const sequence = SaveStore.sequence, changes=this.changeCounter||0, entries=this.cloudRecordings(), refs=[];
                 this.libraryStored ||= new Set();
                 for(const entry of entries){
                     const digest=ReplayFormat.digest(entry.replay.bytes);refs.push({key:entry.key,digest});
                     if(this.libraryStored.has(digest))continue;
-                    const saved=await this.request('recording-store',{method:'POST',auth:true,body:entry.replay.bytes,headers:{'Content-Type':'application/octet-stream'}});
-                    if(saved.digest!==digest)throw Error('Cloud recording digest mismatch.');
+                    const saved=await this.request(&#x27;recording-store&#x27;,{method:&#x27;POST&#x27;,query:{records:&#x27;1&#x27;},auth:true,body:entry.replay.bytes,headers:{&#x27;Content-Type&#x27;:&#x27;application/octet-stream&#x27;}});
+                    if(saved.digest!==digest)throw Error(&#x27;Cloud recording digest mismatch.&#x27;);
                     if(this.scope!==owner||this.serial!==serial)return;
                     this.libraryStored.add(digest);
                 }
                 const bytes = await SaveStore.backupFile(false,refs);
-                if (bytes.length > CloudConfig.maxBytes) throw new Error('Backup exceeds the 16 MB cloud limit. Your complete local backup remains available.');
+                if (bytes.length &gt; CloudConfig.maxBytes) throw new Error(&#x27;Backup exceeds the 16 MB cloud limit. Your complete local backup remains available.&#x27;);
                 if (this.scope !== owner || this.serial !== serial) return;
                 try {
-                    const result = await this.request('save', { method: 'POST', auth: true, body: bytes,
-                        headers: { 'Content-Type': 'application/octet-stream', 'If-Match': String(this.meta.revision) } });
+                    const result = await this.request(&#x27;save&#x27;, { method: &#x27;POST&#x27;, query:{records:&#x27;1&#x27;}, auth: true, body: bytes,
+                        headers: { &#x27;Content-Type&#x27;: &#x27;application/octet-stream&#x27;, &#x27;If-Match&#x27;: String(this.meta.revision) } });
                     if (this.scope !== owner || this.serial !== serial) return;
                     this.meta.revision = result.revision;
                     this.meta.dirty = SaveStore.sequence !== sequence || (this.changeCounter||0)!==changes;
                     if(!this.meta.dirty)this.firstDirtyAt=0;this.meta.lastSyncedAt=Date.now();
-                    this.writeMeta(); this.status = this.meta.dirty ? 'Cloud saved. Newer device changes are pending.' : 'Cloud save is up to date.';
+                    this.writeMeta(); this.status = this.meta.dirty ? &#x27;Cloud saved. Newer device changes are pending.&#x27; : &#x27;Cloud save is up to date.&#x27;;
                 } catch (error) {
-                    if(error.status===409 || !error.status || error.status>=500){
+                    if(error.status===409 || !error.status || error.status&gt;=500){
                         // A timeout may have happened after commit. Match the exact attempted bytes.
-                        try{const remote=await this.request('save',{auth:true});
-                            if(remote.available && remote.revision===this.meta.revision+1){
-                                const stored=await this.request('save-file',{auth:true,raw:true,query:{revision:remote.revision}});
+                        try{const remote=await this.request(&#x27;save&#x27;,{auth:true});
+                            if(remote.available &amp;&amp; remote.revision===this.meta.revision+1){
+                                const stored=await this.request(&#x27;save-file&#x27;,{auth:true,raw:true,query:{revision:remote.revision}});
                                 if(ReplayFormat.digest(stored)===ReplayFormat.digest(bytes)){
                                     this.meta.revision=remote.revision;this.meta.dirty=SaveStore.sequence!==sequence||(this.changeCounter||0)!==changes;
                                     this.meta.lastSyncedAt=Date.now();if(!this.meta.dirty)this.firstDirtyAt=0;this.writeMeta();error=null;
@@ -16337,94 +16351,93 @@ const CloudAccount = {
                             }
                         }catch{}
                     }
-                    if(error){if(error.status===409)this.conflict={revision:error.revision};throw error;}
+                    if(error){this.libraryStored.clear();if(error.status===409)this.conflict={revision:error.revision};throw error;}
                 }
             }
             if(this.scope!==owner||this.serial!==serial)return;
             await this.publishRecords();
             if(this.scope!==owner||this.serial!==serial)return;
-            // Maintenance must never prevent the player's backup or records reaching the server.
-            if (!this.maintenance && (!this.lastCleanup || Date.now() - this.lastCleanup > 3600000)) {
-                const maintenance=this.request('cleanup', { method: 'POST', auth: true });
+            // Maintenance must never prevent the player&#x27;s backup or records reaching the server.
+            if (!this.maintenance &amp;&amp; (!this.lastCleanup || Date.now() - this.lastCleanup &gt; 3600000)) {
+                const maintenance=this.request(&#x27;cleanup&#x27;, { method: &#x27;POST&#x27;, auth: true });
                 this.maintenance=maintenance;
-                maintenance.then(()=>{if(this.scope===owner&&this.serial===serial)this.lastCleanup=Date.now();})
-                    .catch(()=>{/* A later sync can retry maintenance; the backup is already durable. */})
-                    .finally(()=>{if(this.maintenance===maintenance)this.maintenance=null;});
+                maintenance.then(()=&gt;{if(this.scope===owner&amp;&amp;this.serial===serial)this.lastCleanup=Date.now();})
+                    .catch(()=&gt;{/* A later sync can retry maintenance; the backup is already durable. */})
+                    .finally(()=&gt;{if(this.maintenance===maintenance)this.maintenance=null;});
             }
             if(this.scope!==owner||this.serial!==serial)return;
             this.retryAttempt=0;this.networkOffline=false;this.needsAttention=false;
-            this.status=this.meta.dirty?'New device changes are pending.':this.pendingRecords().length ? `Backup saved. ${this.pendingRecords().length} recording(s) awaiting server verification.` : Object.values(this.meta.jobs||{}).some(j=>j.state==='rejected') ? 'Backup saved. A recording needs attention.' : 'Cloud save and recordings are up to date.';
+            this.status=this.meta.dirty?&#x27;New device changes are pending.&#x27;:this.pendingRecords().length ? `Backup saved. ${this.pendingRecords().length} recording(s) awaiting server verification.` : Object.values(this.meta.jobs||{}).some(j=&gt;j.state===&#x27;rejected&#x27;) ? &#x27;Backup saved. A recording needs attention.&#x27; : &#x27;Cloud save and recordings are up to date.&#x27;;
             this.scheduleJobPoll();
             completed = true;
             if (CloudUI.open) CloudUI.status(this.status);
-        })().catch(error=>{if(this.scope===owner&&this.serial===serial)this.showError(error);throw error;}).finally(() => {
+        })().catch(error=&gt;{if(this.scope===owner&amp;&amp;this.serial===serial)this.showError(error);throw error;}).finally(() =&gt; {
             this.uploading = null;
-            if (completed && this.meta.dirty && !this.timer) this.scheduleSync();
+            if (completed &amp;&amp; this.meta.dirty &amp;&amp; !this.timer) this.scheduleSync();
         });
         return this.uploading;
     },
     hasUnsyncedChanges() {
-        if (this.scope==='guest') return false;
+        if (this.scope===&#x27;guest&#x27;) return false;
         if (this.meta.dirty || this.uploading) return true;
         const sent = new Set(this.meta.published);
-        return ReplayLibrary.rows().some(entry =>
-            (entry.key.startsWith('best:') || entry.key === 'last:campaign') &&
-            entry.replay.header.onlineEligible!==false && entry.checked?.completed &&
-            !sent.has(entry.checked.digest) && !this.meta.jobs?.[entry.checked.digest] &&
-            ['flight', 'campaign'].includes(entry.replay.header.kind) &&
-            entry.replay.header.segments[0].level >= 0 && V21Upgrade.eligibleReplay(entry.replay.header) && !ReplayFormat.compatibility(entry.replay));
+        return this.cloudRecordings().some(entry =&gt;
+            entry.key.startsWith(&#x27;best:&#x27;) &amp;&amp;
+            entry.replay.header.onlineEligible!==false &amp;&amp; entry.checked?.completed &amp;&amp;
+            !sent.has(entry.checked.digest) &amp;&amp; !this.meta.jobs?.[entry.checked.digest] &amp;&amp;
+            [&#x27;flight&#x27;, &#x27;campaign&#x27;].includes(entry.replay.header.kind) &amp;&amp;
+            entry.replay.header.segments[0].level &gt;= 0 &amp;&amp; V21Upgrade.eligibleReplay(entry.replay.header) &amp;&amp; !ReplayFormat.compatibility(entry.replay));
     },
     async publishRecords() {
         const serial=this.serial,sent=new Set(this.meta.published);
         this.meta.jobs ||= {};
         const pending=this.pendingRecords();
         if(pending.length){
-            const result=await this.json('jobs',{ids:pending.map(j=>j.id).slice(0,64)},true);
+            const result=await this.json(&#x27;jobs&#x27;,{ids:pending.map(j=&gt;j.id).slice(0,64)},true);
             if(serial!==this.serial)return;
             for(const job of result.jobs){
                 this.meta.jobs[job.digest]={id:job.id,state:job.state,error:job.error,verifier:job.verifier};
-                if(job.state==='accepted')sent.add(job.digest);
+                if(job.state===&#x27;accepted&#x27;)sent.add(job.digest);
             }
             this.meta.published=[...sent].slice(-192);this.writeMeta();
-            if(menuScreen==='leaderboards'&&result.jobs.some(j=>j.state==='accepted'))CloudBoard.load();
+            if(menuScreen===&#x27;leaderboards&#x27;&amp;&amp;result.jobs.some(j=&gt;j.state===&#x27;accepted&#x27;))CloudBoard.load();
         }
-        for(const entry of ReplayLibrary.rows()){
+        for(const entry of this.cloudRecordings()){
             if(serial!==this.serial)return;
-            if(!entry.key.startsWith('best:')&&entry.key!=='last:campaign')continue;
             const digest=entry.checked?.digest;
             if(!digest||sent.has(digest)||this.meta.jobs[digest])continue;
-            if(entry.replay.header.onlineEligible===false||!V21Upgrade.eligibleReplay(entry.replay.header)||!entry.checked?.completed||!['flight','campaign'].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level<0||ReplayFormat.compatibility(entry.replay))continue;
-            if(this.pendingRecords().length>=2)break;
+            if(entry.replay.header.onlineEligible===false||!V21Upgrade.eligibleReplay(entry.replay.header)||!entry.checked?.completed||![&#x27;flight&#x27;,&#x27;campaign&#x27;].includes(entry.replay.header.kind)||entry.replay.header.segments[0].level&lt;0||ReplayFormat.compatibility(entry.replay))continue;
+            if(this.pendingRecords().length&gt;=2)break;
             try{
-                const result=await this.request('submit',{method:'POST',auth:true,body:entry.replay.bytes,headers:{'Content-Type':'application/octet-stream'}});
+                const result=await this.request(&#x27;submit&#x27;,{method:&#x27;POST&#x27;,query:{records:&#x27;1&#x27;},auth:true,body:entry.replay.bytes,headers:{&#x27;Content-Type&#x27;:&#x27;application/octet-stream&#x27;}});
                 if(serial!==this.serial)return;
                 if(result.job)this.meta.jobs[digest]={id:result.job,state:result.state,error:result.error,verifier:result.verifier};
                 else {sent.add(digest);this.meta.published=[...sent].slice(-192);} // Transitional synchronous API.
                 this.writeMeta();
             }catch(error){
                 if(serial!==this.serial)return;
-                if(error.status===422){this.meta.jobs[digest]={id:'rejected-local',state:'rejected',error:error.message};this.writeMeta();continue;}
+                if(error.status===422){this.meta.jobs[digest]={id:&#x27;rejected-local&#x27;,state:&#x27;rejected&#x27;,error:error.message};this.writeMeta();continue;}
                 throw error;
             }
         }
     },
     async retryRecordings() {
         for(const [digest,job] of Object.entries(this.meta.jobs||{})){
-            if(job.state!=='rejected')continue;
-            if(job.id==='rejected-local'){delete this.meta.jobs[digest];continue;}
-            const result=await this.json('retry-job',{id:job.id},true);if(result.resubmit){delete this.meta.jobs[digest];continue;}job.state='queued';job.error=null;
+            if(job.state!==&#x27;rejected&#x27;)continue;
+            if(job.id===&#x27;rejected-local&#x27;){delete this.meta.jobs[digest];continue;}
+            const result=await this.json(&#x27;retry-job&#x27;,{id:job.id},true);if(result.resubmit){delete this.meta.jobs[digest];continue;}job.state=&#x27;queued&#x27;;job.error=null;
         }
         this.writeMeta();await this.sync();
     },
     async logout() {
-        ++this.restoreEpoch; this.clearRemembered(); this.rememberSession = false; this.rememberError = '';
-        if (this.uploading) await this.uploading.catch(() => {});
-        if(this.scope!=='guest'){this.meta.dirty=true;this.writeMeta();}
+        ++this.restoreEpoch; this.clearRemembered(); this.rememberSession = false; this.rememberError = &#x27;&#x27;;
+        if (this.uploading) await this.uploading.catch(() =&gt; {});
+        if(this.scope!==&#x27;guest&#x27;){this.meta.dirty=true;this.writeMeta();}
         if (this.session) {
-            try { await this.request('logout', { method: 'POST', auth: true }); } catch { /* Offline logout still clears this browser's session. */ }
+            try { await this.request(&#x27;logout&#x27;, { method: &#x27;POST&#x27;, auth: true }); } catch { /* Offline logout still clears this browser&#x27;s session. */ }
         }
         this.suppress = true;
-        try { await this.switchScope('guest'); this.pendingGuest = null; this.session = null; this.conflict = null; this.status = 'Guest saves stay on this device.'; }
+        try { await this.switchScope(&#x27;guest&#x27;); this.pendingGuest = null; this.session = null; this.conflict = null; this.status = &#x27;Guest saves stay on this device.&#x27;; }
         finally { this.suppress = false; }
     }
 };
